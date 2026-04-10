@@ -7,7 +7,7 @@ import { WebSerialConnection } from './services/webSerialConnection'
 import { useSensorStateManager } from './state/sensorStateManager'
 import './App.css'
 
-type TrackId = 'danzaKuduro' | 'tocaToca' | 'yQueFue' | 'replay'
+type TrackId = 'danzaKuduro' | 'tocaToca' | 'yQueFue' | 'replay' | 'levels' | 'goodFeeling'
 
 interface CuePoint {
   label: string
@@ -22,7 +22,7 @@ interface TrackMetadata {
   cues: CuePoint[]
 }
 
-const TRACK_IDS: TrackId[] = ['danzaKuduro', 'tocaToca', 'yQueFue', 'replay']
+const TRACK_IDS: TrackId[] = ['danzaKuduro', 'tocaToca', 'yQueFue', 'replay', 'levels', 'goodFeeling']
 
 const TRACK_LIBRARY: Record<TrackId, TrackMetadata> = {
   danzaKuduro: {
@@ -67,6 +67,28 @@ const TRACK_LIBRARY: Record<TrackId, TrackMetadata> = {
       { label: 'Cue 1', ratio: 0.1 },
       { label: 'Cue 2', ratio: 0.33 },
       { label: 'Cue 3', ratio: 0.58 },
+    ],
+  },
+  levels: {
+    title: 'Levels',
+    artist: 'Avicii',
+    path: '/audio/levels.mp3',
+    bpm: 126,
+    cues: [
+      { label: 'Cue 1', ratio: 0.11 },
+      { label: 'Cue 2', ratio: 0.39 },
+      { label: 'Cue 3', ratio: 0.68 },
+    ],
+  },
+  goodFeeling: {
+    title: 'Good Feeling',
+    artist: 'Flo Rida',
+    path: '/audio/goodFeeling.mp3',
+    bpm: 129,
+    cues: [
+      { label: 'Cue 1', ratio: 0.1 },
+      { label: 'Cue 2', ratio: 0.37 },
+      { label: 'Cue 3', ratio: 0.66 },
     ],
   },
 }
@@ -116,9 +138,38 @@ interface AudioEngine {
   filter: BiquadFilterNode
   wetGain: GainNode
   dryGain: GainNode
+  reverbNode: ConvolverNode
+  flangerDelay: DelayNode
+  flangerFeedback: GainNode
+  flangerLfo: OscillatorNode
+  flangerDepth: GainNode
+  fxWetGains: Record<FxType, GainNode>
 }
 
-type BendMode = 'filter' | 'bass'
+type FxType = 'reverb' | 'flanger'
+type ControlMode = 'filter' | 'bass' | FxType
+
+const CONTROL_MODE_OPTIONS: Array<{ id: ControlMode; title: string; detail: string }> = [
+  { id: 'filter', title: 'Filter', detail: 'muffle / brighten' },
+  { id: 'bass', title: 'Bass', detail: 'cut / boost lows' },
+  { id: 'reverb', title: 'Reverb', detail: 'dream wash' },
+  { id: 'flanger', title: 'Flanger', detail: 'swirl / jet' },
+]
+
+const createImpulseResponse = (context: AudioContext, duration = 2.2, decay = 2.6): AudioBuffer => {
+  const length = Math.floor(context.sampleRate * duration)
+  const impulse = context.createBuffer(2, length, context.sampleRate)
+
+  for (let channel = 0; channel < impulse.numberOfChannels; channel += 1) {
+    const data = impulse.getChannelData(channel)
+    for (let i = 0; i < length; i += 1) {
+      const t = 1 - i / length
+      data[i] = (Math.random() * 2 - 1) * Math.pow(t, decay)
+    }
+  }
+
+  return impulse
+}
 
 function App() {
   const [connectionError, setConnectionError] = useState<string | null>(null)
@@ -129,7 +180,7 @@ function App() {
     createTimelineState,
   )
   const [trackWaveform, setTrackWaveform] = useState<Record<TrackId, number[]>>(createWaveformState)
-  const [bendMode, setBendMode] = useState<BendMode>('filter')
+  const [controlMode, setControlMode] = useState<ControlMode>('filter')
   const [filterStatus, setFilterStatus] = useState('Dry zone')
   const [debugEvents, setDebugEvents] = useState<string[]>([])
   const serialConnectionRef = useRef<WebSerialConnection | null>(null)
@@ -317,6 +368,13 @@ function App() {
     const wetGain = context.createGain()
     const dryGain = context.createGain()
     const masterGain = context.createGain()
+    const reverbNode = context.createConvolver()
+    const reverbWetGain = context.createGain()
+    const flangerDelay = context.createDelay(0.03)
+    const flangerFeedback = context.createGain()
+    const flangerWetGain = context.createGain()
+    const flangerLfo = context.createOscillator()
+    const flangerDepth = context.createGain()
     const tracks = {} as Record<TrackId, HTMLAudioElement>
     const analyzers = {} as Record<TrackId, AnalyserNode>
 
@@ -327,6 +385,18 @@ function App() {
     wetGain.gain.value = 0
     dryGain.gain.value = 1
     masterGain.gain.value = 0.9
+    reverbNode.buffer = createImpulseResponse(context)
+    reverbWetGain.gain.value = 0
+    flangerDelay.delayTime.value = 0.005
+    flangerFeedback.gain.value = 0.16
+    flangerWetGain.gain.value = 0
+    flangerLfo.frequency.value = 0.22
+    flangerDepth.gain.value = 0.0025
+
+    const fxWetGains: Record<FxType, GainNode> = {
+      reverb: reverbWetGain,
+      flanger: flangerWetGain,
+    }
 
     const loadError = `Could not load track audio. Add files in public/audio/: ${TRACK_IDS.map((id) => TRACK_LIBRARY[id].path.split('/').pop()).join(', ')}.`
 
@@ -344,6 +414,8 @@ function App() {
       source.connect(dryGain)
       source.connect(filter)
       source.connect(analyzer)
+      source.connect(reverbNode)
+      source.connect(flangerDelay)
 
       track.addEventListener('error', () => setAudioError(loadError))
       track.addEventListener('play', () => {
@@ -374,15 +446,77 @@ function App() {
       })
     })
 
+    reverbNode.connect(reverbWetGain)
+    flangerDelay.connect(flangerWetGain)
+    flangerDelay.connect(flangerFeedback)
+    flangerFeedback.connect(flangerDelay)
+    flangerLfo.connect(flangerDepth)
+    flangerDepth.connect(flangerDelay.delayTime)
     filter.connect(wetGain)
     dryGain.connect(masterGain)
     wetGain.connect(masterGain)
+    reverbWetGain.connect(masterGain)
+    flangerWetGain.connect(masterGain)
     masterGain.connect(context.destination)
+    flangerLfo.start()
 
-    const engine: AudioEngine = { context, tracks, analyzers, filter, wetGain, dryGain }
+    const engine: AudioEngine = {
+      context,
+      tracks,
+      analyzers,
+      filter,
+      wetGain,
+      dryGain,
+      reverbNode,
+      flangerDelay,
+      flangerFeedback,
+      flangerLfo,
+      flangerDepth,
+      fxWetGains,
+    }
     audioEngineRef.current = engine
     return engine
   }, [syncPlaybackState])
+
+  const getFxGuide = useCallback((mode: ControlMode) => {
+    if (mode === 'filter') {
+      return {
+        left: '◀ low-pass (muffled)',
+        center: 'dry',
+        right: 'high-pass (bright) ▶',
+      }
+    }
+
+    if (mode === 'bass') {
+      return {
+        left: '◀ bass cut',
+        center: 'neutral',
+        right: 'bass boost ▶',
+      }
+    }
+
+    if (mode === 'reverb') {
+      return {
+        left: '◀ room / soft',
+        center: 'dry',
+        right: 'wash / dreamy ▶',
+      }
+    }
+
+    if (mode === 'flanger') {
+      return {
+        left: '◀ light swirl',
+        center: 'dry',
+        right: 'deep sweep ▶',
+      }
+    }
+
+    return {
+      left: '◀ light swirl',
+      center: 'dry',
+      right: 'deep sweep ▶',
+    }
+  }, [])
 
   // Called whenever new bend data arrives to keep the selected bend effect in sync.
   const updateFilterFromBend = useCallback((rawBendValue: number) => {
@@ -401,8 +535,42 @@ function App() {
     let q = 0.9
     let gain = 0
     let status = 'Dry zone'
+    const setFxMix = (selected: FxType | null, selectedWet: number) => {
+      ;(Object.keys(engine.fxWetGains) as FxType[]).forEach((type) => {
+        engine.fxWetGains[type].gain.setTargetAtTime(type === selected ? selectedWet : 0, now, 0.04)
+      })
+    }
 
-    if (bendMode === 'bass') {
+    if (controlMode === 'reverb' || controlMode === 'flanger') {
+      engine.filter.type = 'lowpass'
+      q = 0.707
+
+      const magnitude = Math.max(0, Math.abs(bend) - deadZone)
+      const intensity = Math.min(1, magnitude / (100 - deadZone))
+      const direction = bend < 0 ? -1 : bend > 0 ? 1 : 0
+      const fxType = controlMode
+
+      wet = 0
+      dry = 1 - intensity * 0.28
+      setFxMix(null, 0)
+
+      if (intensity === 0 || direction === 0) {
+        status = `${CONTROL_MODE_OPTIONS.find((option) => option.id === fxType)?.title ?? 'FX'} dry`
+      } else if (fxType === 'reverb') {
+        const selectedWet = direction < 0 ? 0.28 + intensity * 0.52 : 0.48 + intensity * 0.92
+        dry = direction < 0 ? 1 - intensity * 0.42 : 1 - intensity * 0.72
+        setFxMix('reverb', selectedWet)
+        status = direction < 0 ? `Reverb room ${Math.round(intensity * 100)}%` : `Reverb wash ${Math.round(intensity * 100)}%`
+      } else if (fxType === 'flanger') {
+        const selectedWet = 0.14 + intensity * 0.54
+        engine.flangerLfo.frequency.setTargetAtTime(direction < 0 ? 0.12 + intensity * 0.26 : 0.28 + intensity * 0.8, now, 0.04)
+        engine.flangerDepth.gain.setTargetAtTime(direction < 0 ? 0.0014 + intensity * 0.0016 : 0.0022 + intensity * 0.004, now, 0.04)
+        engine.flangerFeedback.gain.setTargetAtTime(direction < 0 ? 0.08 + intensity * 0.1 : 0.16 + intensity * 0.2, now, 0.04)
+        setFxMix('flanger', selectedWet)
+        status = direction < 0 ? `Flanger glide ${Math.round(intensity * 100)}%` : `Flanger deep ${Math.round(intensity * 100)}%`
+      }
+    } else if (controlMode === 'bass') {
+      setFxMix(null, 0)
       engine.filter.type = 'lowshelf'
       cutoff = 220
       wet = 1
@@ -421,6 +589,7 @@ function App() {
         status = 'Bass neutral'
       }
     } else {
+      setFxMix(null, 0)
       if (bend < -deadZone) {
         const intensity = Math.min(1, (-bend - deadZone) / (100 - deadZone))
         // Push the low-pass much lower so negative bends get obviously muffled.
@@ -450,7 +619,7 @@ function App() {
     engine.wetGain.gain.setTargetAtTime(wet, now, 0.03)
     engine.dryGain.gain.setTargetAtTime(dry, now, 0.03)
     setFilterStatus(`${status} | bend ${bend.toFixed(1)}`)
-  }, [bendMode])
+  }, [controlMode])
 
   useEffect(() => {
     updateFilterFromBend(bendValue)
@@ -468,6 +637,12 @@ function App() {
       if (waveformFrameRef.current !== null) {
         window.cancelAnimationFrame(waveformFrameRef.current)
         waveformFrameRef.current = null
+      }
+
+      try {
+        engine.flangerLfo.stop()
+      } catch {
+        // oscillator may already be stopped when context is closing
       }
 
       void engine.context.close()
@@ -632,35 +807,6 @@ function App() {
             {' '}· up next: {TRACK_LIBRARY[nextTrackId].title}
           </span>
         </div>
-        <div className="mode-switch" role="group" aria-label="Bend sensor mode">
-          <button
-            className={`secondary mode-btn ${bendMode === 'filter' ? 'is-active' : ''}`}
-            onClick={() => setBendMode('filter')}
-          >
-            Filter sweep
-          </button>
-          <button
-            className={`secondary mode-btn ${bendMode === 'bass' ? 'is-active' : ''}`}
-            onClick={() => setBendMode('bass')}
-          >
-            Bass EQ
-          </button>
-        </div>
-        <p className="filter-guide">
-          {bendMode === 'filter' ? (
-            <>
-              <span className="filter-left">◀ low-pass (muffled)</span>
-              <span className="filter-center">dry</span>
-              <span className="filter-right">high-pass (bright) ▶</span>
-            </>
-          ) : (
-            <>
-              <span className="filter-left">◀ bass cut</span>
-              <span className="filter-center">neutral</span>
-              <span className="filter-right">bass boost ▶</span>
-            </>
-          )}
-        </p>
         {audioError ? <p className="error">{audioError}</p> : null}
         <div className="deck-stage">
           {[primaryDeckId, secondaryDeckId].map((trackId, index) => {
@@ -744,6 +890,35 @@ function App() {
             )
           })}
         </div>
+        <div className="control-rack">
+          <section className="control-bank" aria-label="Bend control bank">
+            <p className="control-bank-label">Bend control</p>
+            <div className="selector-grid selector-grid-controls" role="group" aria-label="Bend control select">
+              {CONTROL_MODE_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  className={`selector-tile ${controlMode === option.id ? 'is-active' : ''}`}
+                  onClick={() => setControlMode(option.id)}
+                >
+                  <span className="selector-title">{option.title}</span>
+                  <span className="selector-detail">{option.detail}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+        <p className="filter-guide">
+          {(() => {
+            const guide = getFxGuide(controlMode)
+            return (
+              <>
+                <span className="filter-left">{guide.left}</span>
+                <span className="filter-center">{guide.center}</span>
+                <span className="filter-right">{guide.right}</span>
+              </>
+            )
+          })()}
+        </p>
         <div className="track-library">
           <div className="track-library-header">
             <span></span>
