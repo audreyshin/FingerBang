@@ -22,7 +22,9 @@ export function SensorCard({ sensor }: SensorCardProps) {
     <section className="panel sensor-card">
       <div className="row">
         <h2>{sensor.label}</h2>
-        <span className={`status-dot status-${sensor.connectionStatus}`}>{sensor.connectionStatus}</span>
+        <span className={`status-dot status-${sensor.connectionStatus}`}>
+          {sensor.connectionStatus === 'connected' ? 'linked' : sensor.connectionStatus === 'connecting' ? 'linking...' : 'unlinked'}
+        </span>
       </div>
       <div className="metrics-grid">
         <article>

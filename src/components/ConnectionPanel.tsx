@@ -9,9 +9,9 @@ interface ConnectionPanelProps {
 }
 
 const getStatusText = (status: ConnectionStatus): string => {
-  if (status === 'connected') return 'Connected'
-  if (status === 'connecting') return 'Connecting...'
-  return 'Disconnected'
+  if (status === 'connected') return 'Linked'
+  if (status === 'connecting') return 'Linking...'
+  return 'Unlinked'
 }
 
 export function ConnectionPanel({

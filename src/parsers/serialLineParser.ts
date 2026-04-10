@@ -1,7 +1,7 @@
 import type { SensorDataPacket, SensorDefinition } from '../types/sensor'
 
-const FIELD_DELIMITER = ','
 const KEY_VALUE_DELIMITER = ':'
+const SERIAL_FIELD_PATTERN = /([A-Za-z_][A-Za-z0-9_]*):\s*(-?\d+(?:\.\d+)?)/g
 
 export const parseKeyValueSerialLine = (line: string): Record<string, number> | null => {
   const trimmed = line.trim()
@@ -9,23 +9,16 @@ export const parseKeyValueSerialLine = (line: string): Record<string, number> | 
     return null
   }
 
-  const values = trimmed
-    .split(FIELD_DELIMITER)
-    .map((part) => part.trim())
-    .reduce<Record<string, number>>((acc, entry) => {
-      const [rawKey, rawValue] = entry.split(KEY_VALUE_DELIMITER)
-      if (!rawKey || rawValue === undefined) {
-        return acc
-      }
-
-      const parsedValue = Number.parseFloat(rawValue)
-      if (Number.isNaN(parsedValue)) {
-        return acc
-      }
-
-      acc[rawKey.trim()] = parsedValue
+  const values = Array.from(trimmed.matchAll(SERIAL_FIELD_PATTERN)).reduce<Record<string, number>>((acc, match) => {
+    const [, rawKey, rawValue] = match
+    const parsedValue = Number.parseFloat(rawValue)
+    if (Number.isNaN(parsedValue)) {
       return acc
-    }, {})
+    }
+
+    acc[rawKey.trim()] = parsedValue
+    return acc
+  }, {})
 
   return Object.keys(values).length > 0 ? values : null
 }
