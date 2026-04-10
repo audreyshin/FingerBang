@@ -1,4 +1,4 @@
-import { useMemo, useReducer } from 'react'
+import { useCallback, useReducer } from 'react'
 import type {
   ConnectionStatus,
   SensorDataPacket,
@@ -155,19 +155,22 @@ export const useSensorStateManager = (sensorDefinitions: SensorDefinition[]): Se
     }, {}),
   }))
 
-  return useMemo(
-    () => ({
-      state,
-      setSensorConnectionStatus: (sensorId: string, status: ConnectionStatus) => {
-        dispatch({ type: 'setConnectionStatus', sensorId, status })
-      },
-      updateSensorData: (sensorId: string, packet: SensorDataPacket, calibrationField?: string) => {
-        dispatch({ type: 'updateSensorData', sensorId, packet, calibrationField })
-      },
-      resetSensorData: (sensorId: string) => {
-        dispatch({ type: 'resetSensorData', sensorId })
-      },
-    }),
-    [state],
-  )
+  const setSensorConnectionStatus = useCallback((sensorId: string, status: ConnectionStatus) => {
+    dispatch({ type: 'setConnectionStatus', sensorId, status })
+  }, [])
+
+  const updateSensorData = useCallback((sensorId: string, packet: SensorDataPacket, calibrationField?: string) => {
+    dispatch({ type: 'updateSensorData', sensorId, packet, calibrationField })
+  }, [])
+
+  const resetSensorData = useCallback((sensorId: string) => {
+    dispatch({ type: 'resetSensorData', sensorId })
+  }, [])
+
+  return {
+    state,
+    setSensorConnectionStatus,
+    updateSensorData,
+    resetSensorData,
+  }
 }

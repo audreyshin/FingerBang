@@ -59,8 +59,8 @@ export function SensorCard({ sensor }: SensorCardProps) {
       </div>
 
       <div className="viz-group">
-        <h3>Bend Percentage (0-100)</h3>
-        <LiveBar value={bendPercent} />
+        <h3>Bidirectional Bend (-100 to 100)</h3>
+        <LiveBar value={biDirectionalValue} />
       </div>
 
       <div className="viz-group">
