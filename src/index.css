@@ -26,6 +26,22 @@ body {
 }
 
 body::before {
+  content: '';
+  position: fixed;
+  top: 50%;
+  left: -6vw;
+  width: min(40vw, 510px);
+  aspect-ratio: 200 / 237;
+  transform: translateY(-50%) rotate(-30deg);
+  background: url('./assets/fingers-left.png') center / contain no-repeat;
+  opacity: 0.045;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+  filter: saturate(0.88) brightness(0.92);
+}
+
+body::after {
   content: 'FINGERBANG';
   position: fixed;
   top: 50%;
@@ -39,7 +55,7 @@ body::before {
   white-space: nowrap;
   pointer-events: none;
   user-select: none;
-  z-index: 0;
+  z-index: 1;
   line-height: 1;
   font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
   background: linear-gradient(
@@ -59,5 +75,21 @@ body::before {
   display: flex;
   flex-direction: column;
   position: relative;
-  z-index: 1;
+  z-index: 2;
+}
+
+#root::before {
+  content: '';
+  position: fixed;
+  top: 50%;
+  right: -6vw;
+  width: min(40vw, 510px);
+  aspect-ratio: 200 / 237;
+  transform: translateY(-50%) rotate(30deg);
+  background: url('./assets/fingers-right.png') center / contain no-repeat;
+  opacity: 0.045;
+  pointer-events: none;
+  user-select: none;
+  z-index: -1;
+  filter: saturate(0.88) brightness(0.92);
 }

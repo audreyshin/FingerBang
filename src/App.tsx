@@ -187,12 +187,25 @@ type TrainingPrompt = {
   direction: BendDirection
 }
 type TrainingResultStatus = 'hit' | 'miss'
+type ProducerTag = {
+  id: 'daytrip' | 'f1lthy' | 'voicy' | 'yopierre'
+  label: string
+  shortLabel: string
+  path: string
+}
 
 const CONTROL_MODE_OPTIONS: Array<{ id: ControlMode; title: string; detail: string }> = [
   { id: 'filter', title: 'Filter', detail: 'muffle / brighten' },
   { id: 'bass', title: 'Bass', detail: 'cut / boost lows' },
   { id: 'reverb', title: 'Reverb', detail: 'dream wash' },
   { id: 'flanger', title: 'Flanger', detail: 'swirl / jet' },
+]
+
+const PRODUCER_TAGS: ProducerTag[] = [
+  { id: 'daytrip', label: 'Daytrip', shortLabel: 'DT', path: '/audio/daytrip.mp3' },
+  { id: 'f1lthy', label: 'F1lthy', shortLabel: 'F1', path: '/audio/f1lthy-producer-tag.mp3' },
+  { id: 'voicy', label: 'Voicy', shortLabel: 'VC', path: '/audio/Voicy_Honorable C Note.mp3' },
+  { id: 'yopierre', label: 'Yo Pierre', shortLabel: 'YP', path: '/audio/yo-pierre-or.mp3' },
 ]
 
 const LEVELS_TRAINING_PROMPTS: TrainingPrompt[] = [
@@ -1057,6 +1070,15 @@ function App() {
     }))
   }
 
+  const playProducerTag = (tag: ProducerTag) => {
+    const clip = new Audio(tag.path)
+    clip.preload = 'auto'
+    clip.volume = 0.95
+    void clip.play().catch(() => {
+      setAudioError(`Could not play producer tag: ${tag.label}.`)
+    })
+  }
+
   return (
     <main className="app-shell">
       <header className="app-header">
@@ -1225,6 +1247,22 @@ function App() {
                     <span className="selector-scale-top">{getControlScaleLabels(option.id).positive}</span>
                     <span className="selector-scale-bottom">{getControlScaleLabels(option.id).negative}</span>
                   </span>
+                </button>
+              ))}
+            </div>
+          </section>
+          <section className="control-bank producer-tag-bank" aria-label="Producer tags">
+            <p className="control-bank-label">Producer tags</p>
+            <div className="producer-tag-grid">
+              {PRODUCER_TAGS.map((tag) => (
+                <button
+                  key={tag.id}
+                  className="producer-tag-btn"
+                  title={tag.label}
+                  aria-label={tag.label}
+                  onClick={() => playProducerTag(tag)}
+                >
+                  {tag.shortLabel}
                 </button>
               ))}
             </div>
