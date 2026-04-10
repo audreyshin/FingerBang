@@ -1,4 +1,3 @@
-import { HistoryGraph } from './HistoryGraph'
 import { LiveBar } from './LiveBar'
 import type { SensorRuntimeState } from '../types/sensor'
 
@@ -63,11 +62,6 @@ export function SensorCard({ sensor }: SensorCardProps) {
       <div className="viz-group">
         <h3>Bidirectional Bend (-100 to 100)</h3>
         <LiveBar value={biDirectionalValue} />
-      </div>
-
-      <div className="viz-group">
-        <h3>Live Trend</h3>
-        <HistoryGraph values={sensor.history} />
       </div>
     </section>
   )

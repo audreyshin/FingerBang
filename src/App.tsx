@@ -7,7 +7,15 @@ import { WebSerialConnection } from './services/webSerialConnection'
 import { useSensorStateManager } from './state/sensorStateManager'
 import './App.css'
 
-type TrackId = 'danzaKuduro' | 'tocaToca' | 'yQueFue' | 'replay' | 'levels' | 'goodFeeling'
+type TrackId =
+  | 'danzaKuduro'
+  | 'tocaToca'
+  | 'yQueFue'
+  | 'replay'
+  | 'levels'
+  | 'goodFeeling'
+  | 'tears'
+  | 'breakFree'
 
 interface CuePoint {
   label: string
@@ -22,7 +30,7 @@ interface TrackMetadata {
   cues: CuePoint[]
 }
 
-const TRACK_IDS: TrackId[] = ['danzaKuduro', 'tocaToca', 'yQueFue', 'replay', 'levels', 'goodFeeling']
+const TRACK_IDS: TrackId[] = ['danzaKuduro', 'tocaToca', 'yQueFue', 'replay', 'levels', 'goodFeeling', 'tears', 'breakFree']
 
 const TRACK_LIBRARY: Record<TrackId, TrackMetadata> = {
   danzaKuduro: {
@@ -91,6 +99,28 @@ const TRACK_LIBRARY: Record<TrackId, TrackMetadata> = {
       { label: 'Cue 3', ratio: 0.66 },
     ],
   },
+  tears: {
+    title: 'No Tears Left to Cry',
+    artist: 'Ariana Grande',
+    path: '/audio/tears.mp3',
+    bpm: 122,
+    cues: [
+      { label: 'Cue 1', ratio: 0.1 },
+      { label: 'Cue 2', ratio: 0.35 },
+      { label: 'Cue 3', ratio: 0.64 },
+    ],
+  },
+  breakFree: {
+    title: 'Break Free',
+    artist: 'Ariana Grande feat. Zedd',
+    path: '/audio/breakfree.mp3',
+    bpm: 130,
+    cues: [
+      { label: 'Cue 1', ratio: 0.1 },
+      { label: 'Cue 2', ratio: 0.36 },
+      { label: 'Cue 3', ratio: 0.63 },
+    ],
+  },
 }
 
 const createPlaybackState = (): Record<TrackId, boolean> =>
@@ -148,6 +178,15 @@ interface AudioEngine {
 
 type FxType = 'reverb' | 'flanger'
 type ControlMode = 'filter' | 'bass' | FxType
+type BendDirection = 'left' | 'right' | 'center'
+type TrainingPrompt = {
+  id: string
+  time: number
+  duration: number
+  mode: ControlMode
+  direction: BendDirection
+}
+type TrainingResultStatus = 'hit' | 'miss'
 
 const CONTROL_MODE_OPTIONS: Array<{ id: ControlMode; title: string; detail: string }> = [
   { id: 'filter', title: 'Filter', detail: 'muffle / brighten' },
@@ -155,6 +194,85 @@ const CONTROL_MODE_OPTIONS: Array<{ id: ControlMode; title: string; detail: stri
   { id: 'reverb', title: 'Reverb', detail: 'dream wash' },
   { id: 'flanger', title: 'Flanger', detail: 'swirl / jet' },
 ]
+
+const LEVELS_TRAINING_PROMPTS: TrainingPrompt[] = [
+  { id: 'levels-01', time: 18, duration: 6, mode: 'filter', direction: 'left' },
+  { id: 'levels-02', time: 28, duration: 7, mode: 'filter', direction: 'right' },
+  { id: 'levels-03', time: 41, duration: 6, mode: 'bass', direction: 'right' },
+  { id: 'levels-04', time: 54, duration: 8, mode: 'reverb', direction: 'right' },
+  { id: 'levels-05', time: 68, duration: 5, mode: 'filter', direction: 'center' },
+  { id: 'levels-06', time: 81, duration: 7, mode: 'flanger', direction: 'left' },
+  { id: 'levels-07', time: 94, duration: 6, mode: 'bass', direction: 'right' },
+  { id: 'levels-08', time: 106, duration: 7, mode: 'filter', direction: 'right' },
+  { id: 'levels-09', time: 121, duration: 8, mode: 'reverb', direction: 'right' },
+  { id: 'levels-10', time: 135, duration: 6, mode: 'filter', direction: 'left' },
+  { id: 'levels-11', time: 148, duration: 6, mode: 'bass', direction: 'left' },
+  { id: 'levels-12', time: 162, duration: 7, mode: 'flanger', direction: 'right' },
+  { id: 'levels-13', time: 175, duration: 8, mode: 'reverb', direction: 'right' },
+  { id: 'levels-14', time: 189, duration: 5, mode: 'filter', direction: 'center' },
+  { id: 'levels-15', time: 203, duration: 6, mode: 'bass', direction: 'right' },
+  { id: 'levels-16', time: 217, duration: 8, mode: 'reverb', direction: 'right' },
+]
+
+const TRAINING_TRACK_ID: TrackId = 'levels'
+const TRAINING_WINDOW_SECONDS = 3
+
+const getBendDirection = (value: number): BendDirection => {
+  if (value < -22) return 'left'
+  if (value > 22) return 'right'
+  return 'center'
+}
+
+const getModeTitle = (mode: ControlMode): string =>
+  CONTROL_MODE_OPTIONS.find((option) => option.id === mode)?.title ?? mode
+
+const getTrainingPromptEnd = (prompt: TrainingPrompt): number => prompt.time + prompt.duration
+
+const formatTrainingPrompt = (prompt: TrainingPrompt, compact = false): string => {
+  const modeTitle = getModeTitle(prompt.mode)
+  const directionLabel =
+    prompt.direction === 'left' ? 'bend left' : prompt.direction === 'right' ? 'bend right' : 'center reset'
+
+  if (compact) {
+    const directionMark = prompt.direction === 'left' ? '◀' : prompt.direction === 'right' ? '▶' : '•'
+    return `${modeTitle} ${directionMark}`
+  }
+
+  return `${modeTitle} · ${directionLabel}`
+}
+
+const formatTrainingInstruction = (prompt: TrainingPrompt): string =>
+  `${formatTrainingPrompt(prompt)} · hold until ${formatTime(getTrainingPromptEnd(prompt))}`
+
+const getControlScaleLabels = (
+  mode: ControlMode,
+): { negative: string; positive: string } => {
+  if (mode === 'filter') {
+    return {
+      positive: '+100 brighten',
+      negative: '-100 muffle',
+    }
+  }
+
+  if (mode === 'bass') {
+    return {
+      positive: '+100 bass boost',
+      negative: '-100 bass cut',
+    }
+  }
+
+  if (mode === 'reverb') {
+    return {
+      positive: '+100 big wash',
+      negative: '-100 soft room',
+    }
+  }
+
+  return {
+    positive: '+100 deep sweep',
+    negative: '-100 light swirl',
+  }
+}
 
 const createImpulseResponse = (context: AudioContext, duration = 2.2, decay = 2.6): AudioBuffer => {
   const length = Math.floor(context.sampleRate * duration)
@@ -181,6 +299,9 @@ function App() {
   )
   const [trackWaveform, setTrackWaveform] = useState<Record<TrackId, number[]>>(createWaveformState)
   const [controlMode, setControlMode] = useState<ControlMode>('filter')
+  const [trainingModeEnabled, setTrainingModeEnabled] = useState(false)
+  const [trainingResults, setTrainingResults] = useState<Record<string, TrainingResultStatus>>({})
+  const [trainingFeedback, setTrainingFeedback] = useState<{ message: string; kind: TrainingResultStatus } | null>(null)
   const [filterStatus, setFilterStatus] = useState('Dry zone')
   const [debugEvents, setDebugEvents] = useState<string[]>([])
   const serialConnectionRef = useRef<WebSerialConnection | null>(null)
@@ -214,6 +335,8 @@ function App() {
   )
   const noDataTimeoutRef = useRef<number | null>(null)
   const hasReceivedSerialRef = useRef(false)
+  const trainingFeedbackTimeoutRef = useRef<number | null>(null)
+  const trainingLastTimeRef = useRef(0)
 
   const hasWebSerial = typeof navigator !== 'undefined' && Boolean(navigator.serial)
   const { state, setSensorConnectionStatus, updateSensorData, resetSensorData } = useSensorStateManager(
@@ -340,6 +463,77 @@ function App() {
     : TRACK_IDS[0]
   const primaryDeckId = activeTrackId ?? TRACK_IDS[0]
   const secondaryDeckId = nextTrackId
+  const orderedTrackIds = useMemo(
+    () =>
+      [...TRACK_IDS].sort((a, b) => {
+        const aPlaying = trackPlaybackState[a] ? 1 : 0
+        const bPlaying = trackPlaybackState[b] ? 1 : 0
+        if (aPlaying !== bPlaying) return bPlaying - aPlaying
+        return TRACK_IDS.indexOf(a) - TRACK_IDS.indexOf(b)
+      }),
+    [trackPlaybackState],
+  )
+  const bendDirection = useMemo(() => getBendDirection(bendValue), [bendValue])
+  const trainingTrackTimeline = trackTimeline[TRAINING_TRACK_ID]
+  const trainingTrackElapsed = trainingTrackTimeline?.currentTime ?? 0
+  const trainingTrackDuration = trainingTrackTimeline?.duration ?? 0
+  const trainingTrackIsPlaying = trackPlaybackState[TRAINING_TRACK_ID]
+  const trainingPrompts = LEVELS_TRAINING_PROMPTS
+  const trainingTimelineDuration =
+    trainingTrackDuration > 0 ? trainingTrackDuration : getTrainingPromptEnd(trainingPrompts[trainingPrompts.length - 1]!) + 12
+  const activeTrainingPrompt = useMemo(() => {
+    if (!trainingModeEnabled) return null
+
+    return (
+      trainingPrompts.find((prompt) => {
+        const result = trainingResults[prompt.id]
+        if (result) return false
+        const promptEnd = getTrainingPromptEnd(prompt)
+        return trainingTrackElapsed >= prompt.time && trainingTrackElapsed <= promptEnd + TRAINING_WINDOW_SECONDS
+      }) ?? null
+    )
+  }, [trainingModeEnabled, trainingPrompts, trainingResults, trainingTrackElapsed])
+  const nextTrainingPrompt = useMemo(
+    () =>
+      trainingModeEnabled
+        ? trainingPrompts.find((prompt) => !trainingResults[prompt.id] && prompt.time > trainingTrackElapsed) ?? null
+        : null,
+    [trainingModeEnabled, trainingPrompts, trainingResults, trainingTrackElapsed],
+  )
+  const upcomingTrainingPrompts = useMemo(
+    () =>
+      trainingModeEnabled
+        ? trainingPrompts.filter(
+            (prompt) =>
+              !trainingResults[prompt.id] &&
+              prompt.time >= trainingTrackElapsed &&
+              prompt.time <= trainingTrackElapsed + 20,
+          ).slice(0, 5)
+        : [],
+    [trainingModeEnabled, trainingPrompts, trainingResults, trainingTrackElapsed],
+  )
+  const trainingScore = useMemo(() => {
+    const hits = Object.values(trainingResults).filter((value) => value === 'hit').length
+    const misses = Object.values(trainingResults).filter((value) => value === 'miss').length
+    return { hits, misses, total: trainingPrompts.length }
+  }, [trainingPrompts.length, trainingResults])
+  const stageTrendPoints = useMemo(() => {
+    const values = primarySensorState?.history ?? []
+    if (values.length < 2) return null
+
+    const width = 1200
+    const height = 240
+    const amplitude = 96
+    const centerY = height / 2
+    return values
+      .map((value, index) => {
+        const x = (index / (values.length - 1)) * width
+        const clamped = Math.max(-100, Math.min(100, value))
+        const y = centerY - (clamped / 100) * amplitude
+        return `${x},${y}`
+      })
+      .join(' ')
+  }, [primarySensorState?.history])
 
   const syncPlaybackState = useCallback((engine: AudioEngine) => {
     setTrackPlaybackState(
@@ -626,6 +820,79 @@ function App() {
   }, [bendValue, updateFilterFromBend])
 
   useEffect(() => {
+    if (!trainingModeEnabled) {
+      setTrainingResults({})
+      setTrainingFeedback(null)
+      trainingLastTimeRef.current = 0
+      if (trainingFeedbackTimeoutRef.current !== null) {
+        window.clearTimeout(trainingFeedbackTimeoutRef.current)
+        trainingFeedbackTimeoutRef.current = null
+      }
+      return
+    }
+
+    const rewound = trainingTrackElapsed < 1.5 || trainingTrackElapsed + 2 < trainingLastTimeRef.current
+    if (rewound) {
+      setTrainingResults({})
+      setTrainingFeedback(null)
+    }
+
+    trainingLastTimeRef.current = trainingTrackElapsed
+  }, [trainingModeEnabled, trainingTrackElapsed])
+
+  useEffect(() => {
+    if (!trainingModeEnabled || !trainingTrackIsPlaying) return
+
+    const missedPrompts = trainingPrompts.filter(
+      (prompt) => !trainingResults[prompt.id] && trainingTrackElapsed > getTrainingPromptEnd(prompt) + TRAINING_WINDOW_SECONDS,
+    )
+    if (missedPrompts.length === 0) return
+
+    setTrainingResults((prev) => {
+      const next = { ...prev }
+      missedPrompts.forEach((prompt) => {
+        next[prompt.id] = 'miss'
+      })
+      return next
+    })
+
+    const latestMiss = missedPrompts[missedPrompts.length - 1]
+    if (latestMiss) {
+      setTrainingFeedback({ message: 'Miss', kind: 'miss' })
+      if (trainingFeedbackTimeoutRef.current !== null) {
+        window.clearTimeout(trainingFeedbackTimeoutRef.current)
+      }
+      trainingFeedbackTimeoutRef.current = window.setTimeout(() => {
+        setTrainingFeedback(null)
+        trainingFeedbackTimeoutRef.current = null
+      }, 3000)
+    }
+  }, [trainingModeEnabled, trainingPrompts, trainingResults, trainingTrackElapsed, trainingTrackIsPlaying])
+
+  useEffect(() => {
+    if (!trainingModeEnabled || !trainingTrackIsPlaying || !activeTrainingPrompt) return
+
+    if (controlMode !== activeTrainingPrompt.mode || bendDirection !== activeTrainingPrompt.direction) {
+      return
+    }
+
+    setTrainingResults((prev) => {
+      if (prev[activeTrainingPrompt.id]) return prev
+      return { ...prev, [activeTrainingPrompt.id]: 'hit' }
+    })
+    setTrainingFeedback({ message: 'GOOD!!', kind: 'hit' })
+
+    if (trainingFeedbackTimeoutRef.current !== null) {
+      window.clearTimeout(trainingFeedbackTimeoutRef.current)
+    }
+
+    trainingFeedbackTimeoutRef.current = window.setTimeout(() => {
+      setTrainingFeedback(null)
+      trainingFeedbackTimeoutRef.current = null
+    }, 3000)
+  }, [activeTrainingPrompt, bendDirection, controlMode, trainingModeEnabled, trainingTrackIsPlaying])
+
+  useEffect(() => {
     return () => {
       const engine = audioEngineRef.current
       if (!engine) return
@@ -647,6 +914,14 @@ function App() {
 
       void engine.context.close()
       audioEngineRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (trainingFeedbackTimeoutRef.current !== null) {
+        window.clearTimeout(trainingFeedbackTimeoutRef.current)
+      }
     }
   }, [])
 
@@ -790,7 +1065,7 @@ function App() {
         </div>
         <div className="header-meta">
           <span className={`status-badge status-${appConnectionStatus}`}>
-            {appConnectionStatus === 'connected' ? 'linked' : appConnectionStatus === 'connecting' ? 'linking...' : 'unlinked'}
+            {appConnectionStatus === 'connected' ? 'linked 👅' : appConnectionStatus === 'connecting' ? 'linking...' : 'unlinked'}
           </span>
           <button className="secondary" onClick={() => setShowConnectionPanel((v) => !v)}>
             {showConnectionPanel ? 'Hide Setup ↑' : 'Setup ↓'}
@@ -799,7 +1074,7 @@ function App() {
       </header>
 
       <section className="panel notes-panel">
-        <h2>DJ Booth</h2>
+        <h2>Producer: Audrey Shin</h2>
         <div className="booth-meta row">
           <span className="booth-filter-status">{filterStatus}</span>
           <span className="booth-deck-status">
@@ -809,6 +1084,47 @@ function App() {
         </div>
         {audioError ? <p className="error">{audioError}</p> : null}
         <div className="deck-stage">
+          <div className="deck-trend-backdrop" aria-hidden="true">
+            <div className="deck-trend-axis-label deck-trend-axis-top">+100</div>
+            <div className="deck-trend-axis-label deck-trend-axis-center">0</div>
+            <div className="deck-trend-axis-label deck-trend-axis-bottom">-100</div>
+            <svg className="deck-trend-graph" viewBox="0 0 1200 240" preserveAspectRatio="none">
+              <line className="deck-trend-midline" x1="0" y1="120" x2="1200" y2="120" />
+              {stageTrendPoints ? <polyline className="deck-trend-line" points={stageTrendPoints} /> : null}
+            </svg>
+          </div>
+          {trainingModeEnabled ? (
+            <div className="deck-training-backdrop">
+              <div className="training-lane training-lane-stage">
+                <div
+                  className="training-lane-progress"
+                  style={{ width: `${Math.min(100, (trainingTrackElapsed / trainingTimelineDuration) * 100)}%` }}
+                />
+                {trainingPrompts.map((prompt) => {
+                  const left = (prompt.time / trainingTimelineDuration) * 100
+                  const width = (prompt.duration / trainingTimelineDuration) * 100
+                  const result = trainingResults[prompt.id]
+                  const isHit = result === 'hit'
+                  const isMiss = result === 'miss'
+                  const isCurrent = activeTrainingPrompt?.id === prompt.id
+                  const isUpcoming = !result && prompt.time > trainingTrackElapsed && prompt.time <= trainingTrackElapsed + 10
+
+                  return (
+                    <div
+                      key={prompt.id}
+                      className={`training-marker training-marker--${prompt.mode}${isHit ? ' is-hit' : ''}${
+                        isMiss ? ' is-miss' : ''
+                      }${isCurrent ? ' is-current' : ''}${isUpcoming ? ' is-upcoming' : ''}`}
+                      style={{ left: `${left}%`, width: `${width}%` }}
+                      title={`${formatTrainingInstruction(prompt)} · start ${formatTime(prompt.time)}`}
+                    >
+                      <span className="training-marker-fill" />
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ) : null}
           {[primaryDeckId, secondaryDeckId].map((trackId, index) => {
             const info = TRACK_LIBRARY[trackId]
             const timeline = trackTimeline[trackId]
@@ -897,11 +1213,18 @@ function App() {
               {CONTROL_MODE_OPTIONS.map((option) => (
                 <button
                   key={option.id}
-                  className={`selector-tile ${controlMode === option.id ? 'is-active' : ''}`}
+                  className={`selector-tile selector-tile--${option.id} ${controlMode === option.id ? 'is-active' : ''} ${
+                    trainingModeEnabled && activeTrainingPrompt?.mode === option.id ? 'is-training-target' : ''
+                  }`}
                   onClick={() => setControlMode(option.id)}
                 >
-                  <span className="selector-title">{option.title}</span>
-                  <span className="selector-detail">{option.detail}</span>
+                  <span className="selector-copy">
+                    <span className="selector-title">{option.title}</span>
+                  </span>
+                  <span className="selector-scale-stack" aria-hidden="true">
+                    <span className="selector-scale-top">{getControlScaleLabels(option.id).positive}</span>
+                    <span className="selector-scale-bottom">{getControlScaleLabels(option.id).negative}</span>
+                  </span>
                 </button>
               ))}
             </div>
@@ -920,15 +1243,25 @@ function App() {
           })()}
         </p>
         <div className="track-library">
-          <div className="track-library-header">
-            <span></span>
-            <span>Title</span>
-            <span>Artist</span>
-            <span>BPM</span>
-            <span>Time</span>
-            <span>Cues</span>
+          <div className="track-library-top">
+            <div>
+              <p className="track-library-kicker">Track crate</p>
+              <h3 className="track-library-heading">Library</h3>
+            </div>
+            <div className="track-library-top-actions">
+              <span className="track-library-summary">
+                {activeTrackId ? `Now playing: ${TRACK_LIBRARY[activeTrackId].title}` : 'Ready to cue'}
+              </span>
+              <button
+                className={`secondary training-toggle ${trainingModeEnabled ? 'is-active' : ''}`}
+                onClick={() => setTrainingModeEnabled((value) => !value)}
+              >
+                {trainingModeEnabled ? 'Training on' : 'Training off'}
+              </button>
+            </div>
           </div>
-          {TRACK_IDS.map((trackId, i) => {
+          <div className="track-library-body">
+          {orderedTrackIds.map((trackId, i) => {
             const info = TRACK_LIBRARY[trackId]
             const timeline = trackTimeline[trackId]
             const isPlaying = trackPlaybackState[trackId]
@@ -936,39 +1269,88 @@ function App() {
             const duration = timeline?.duration ?? 0
             const remaining = Math.max(0, duration - elapsed)
             const progress = duration > 0 ? Math.min(100, (elapsed / duration) * 100) : 0
+            const isTrainingTrack = trainingModeEnabled && trackId === TRAINING_TRACK_ID
 
             return (
               <article key={trackId} className={`track-library-row${isPlaying ? ' is-playing' : ''}`}>
-                <button className="track-play-btn" onClick={() => void toggleTrackPlayback(trackId)}>
-                  {isPlaying ? '❚❚' : '▶'}
-                </button>
-                <div className="track-library-title">
-                  <span className="track-num">{String(i + 1).padStart(2, '0')}</span>
-                  {info.title}
-                  <div className="track-progress track-progress-inline">
-                    <div className="track-progress-fill" style={{ width: `${progress}%` }} />
+                <div className="track-library-row-top">
+                  <button className="track-play-btn" onClick={() => void toggleTrackPlayback(trackId)}>
+                    {isPlaying ? '❚❚' : '▶'}
+                  </button>
+                  <div className="track-library-title">
+                    <span className="track-num">{String(i + 1).padStart(2, '0')}</span>
+                    {info.title}
+                    <span className="track-library-artist">{info.artist}</span>
                   </div>
+                  <span className={`track-live-indicator${isPlaying ? ' is-live' : ''}`}>
+                    {isPlaying ? 'live' : 'queued'}
+                  </span>
                 </div>
-                <span className="track-library-artist">{info.artist}</span>
-                <span className="track-library-bpm">{info.bpm}</span>
-                <span className="track-library-time">
-                  {formatTime(elapsed)}<span className="track-time-sep"> / </span>-{formatTime(remaining)}
-                </span>
-                <div className="cue-row">
-                  {info.cues.map((cue, ci) => (
-                    <button
-                      key={`${trackId}-${cue.label}`}
-                      className={`cue-dot cue-color-${ci}`}
-                      title={cue.label}
-                      onClick={() => void jumpToCue(trackId, cue)}
-                    >
-                      {ci + 1}
-                    </button>
-                  ))}
+                <div className="track-progress track-progress-inline">
+                  <div className="track-progress-fill" style={{ width: `${progress}%` }} />
+                </div>
+                {isTrainingTrack ? (
+                  <div className="training-panel">
+                    <div className="training-panel-top">
+                      <span className="training-label">Training mode · Levels</span>
+                      <div className="training-scoreboard">
+                        <span className="training-score-chip is-hit">Hits {trainingScore.hits}</span>
+                        <span className="training-score-chip is-miss">Misses {trainingScore.misses}</span>
+                        <span className="training-score-chip">Left {trainingScore.total - trainingScore.hits - trainingScore.misses}</span>
+                      </div>
+                      <span className="training-current">
+                        {activeTrainingPrompt
+                          ? formatTrainingInstruction(activeTrainingPrompt)
+                          : nextTrainingPrompt
+                            ? `Next: ${formatTrainingInstruction(nextTrainingPrompt)}`
+                          : isPlaying
+                            ? 'Ride back to neutral and wait for the next hold bar'
+                            : 'Press play to start the lesson'}
+                      </span>
+                      <span className={`training-feedback${trainingFeedback ? ` is-${trainingFeedback.kind}` : ''}`}>
+                        {trainingFeedback?.message ?? ''}
+                      </span>
+                    </div>
+                    <div className="training-upcoming">
+                      {upcomingTrainingPrompts.length > 0 ? (
+                        upcomingTrainingPrompts.map((prompt) => (
+                          <span
+                            key={prompt.id}
+                            className={`training-chip training-chip--${prompt.mode}${activeTrainingPrompt?.id === prompt.id ? ' is-current' : ''}`}
+                          >
+                            {formatTime(prompt.time)}-{formatTime(getTrainingPromptEnd(prompt))} · {formatTrainingPrompt(prompt, true)}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="training-chip is-muted">More cues will appear as the song moves</span>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+                <div className="track-library-meta">
+                  <span className="track-library-bpm">{info.bpm} BPM</span>
+                  <span className="track-library-time">
+                    {formatTime(elapsed)}<span className="track-time-sep"> / </span>-{formatTime(remaining)}
+                  </span>
+                </div>
+                <div className="track-library-actions">
+                  <div className="cue-row">
+                    {info.cues.map((cue, ci) => (
+                      <button
+                        key={`${trackId}-${cue.label}`}
+                        className={`cue-dot cue-color-${ci}`}
+                        title={cue.label}
+                        onClick={() => void jumpToCue(trackId, cue)}
+                      >
+                        {ci + 1}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </article>
             )
           })}
+          </div>
         </div>
       </section>
 

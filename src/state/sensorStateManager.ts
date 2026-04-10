@@ -81,7 +81,7 @@ const reducer = (state: SensorStateStore, action: SensorAction): SensorStateStor
           : current.calibration.maxDetected === null
             ? calibrationValue
             : Math.max(current.calibration.maxDetected, calibrationValue)
-      const historySource = action.packet.normalizedValues.bendPercent
+      const historySource = action.packet.rawValues.biDirectional ?? action.packet.normalizedValues.bendPercent
       const history =
         historySource === undefined
           ? current.history
