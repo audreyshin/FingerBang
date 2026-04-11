@@ -945,15 +945,26 @@ function App() {
         const waveformSnapshot = {} as Record<TrackId, number[]>
         TRACK_IDS.forEach((trackId) => {
           const analyzer = engine.analyzers[trackId]
-          const data = new Uint8Array(analyzer.fftSize)
-          analyzer.getByteTimeDomainData(data)
+          const data = new Uint8Array(analyzer.frequencyBinCount)
+          analyzer.getByteFrequencyData(data)
 
           const bars = 28
-          const step = Math.max(1, Math.floor(data.length / bars))
           const levels: number[] = []
           for (let i = 0; i < bars; i++) {
-            const sample = data[Math.min(data.length - 1, i * step)] ?? 128
-            levels.push(Math.max(0.05, Math.abs(sample - 128) / 128))
+            const start = Math.floor(Math.pow(i / bars, 1.7) * data.length * 0.92)
+            const end = Math.max(start + 1, Math.floor(Math.pow((i + 1) / bars, 1.7) * data.length * 0.92))
+            let sum = 0
+            let peak = 0
+            for (let j = start; j < end; j++) {
+              const value = (data[j] ?? 0) / 255
+              sum += value
+              peak = Math.max(peak, value)
+            }
+            const average = sum / Math.max(1, end - start)
+            const mixed = average * 0.6 + peak * 0.4
+            const spectralWeight = 0.78 + (i / (bars - 1)) * 0.85
+            const contrasted = Math.pow(mixed, 1.2) * 2.6 * spectralWeight
+            levels.push(Math.max(0.03, Math.min(1.9, contrasted)))
           }
           waveformSnapshot[trackId] = levels
         })
@@ -980,13 +991,18 @@ function App() {
           for (let i = 0; i < bassEnd; i++) bassSum += freq[i] ?? 0
           const bassEnergy = isPlaying ? bassSum / bassEnd / 255 : 0
 
-          // Lerp toward target scale: big attack, slow decay
-          const targetScale = 1 + bassEnergy * 0.09
+          // Push the platter pulse much harder and add a vertical punch on bass hits.
+          const emphasizedBass = Math.pow(bassEnergy, 0.72)
+          const targetScale = 1 + emphasizedBass * 0.24
+          const targetLift = emphasizedBass * -14
           const currentScale = platterScaleRef.current[trackId] ?? 1
-          const alpha = bassEnergy > currentScale - 1 ? 0.4 : 0.08
+          const currentLift = Number(platter.dataset.lift ?? '0')
+          const alpha = emphasizedBass > currentScale - 1 ? 0.68 : 0.16
           platterScaleRef.current[trackId] = currentScale + (targetScale - currentScale) * alpha
+          const nextLift = currentLift + (targetLift - currentLift) * alpha
+          platter.dataset.lift = nextLift.toFixed(4)
 
-          platter.style.transform = `scale(${platterScaleRef.current[trackId].toFixed(4)})`
+          platter.style.transform = `translateY(${nextLift.toFixed(2)}px) scale(${platterScaleRef.current[trackId].toFixed(4)})`
 
           // Drip crossfade animation using individual frame PNGs
           const dripWrap = dripWrapRefs.current[trackId]
