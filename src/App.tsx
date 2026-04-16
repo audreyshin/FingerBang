@@ -194,12 +194,17 @@ type ProducerTag = {
   path: string
 }
 
-const CONTROL_MODE_OPTIONS: Array<{ id: ControlMode; title: string; detail: string }> = [
+const WATER_EFFECTS_ENABLED = false
+
+const ALL_CONTROL_MODE_OPTIONS: Array<{ id: ControlMode; title: string; detail: string }> = [
   { id: 'filter', title: 'Filter', detail: 'muffle / brighten' },
   { id: 'bass', title: 'Bass', detail: 'cut / boost lows' },
   { id: 'reverb', title: 'Reverb', detail: 'dream wash' },
   { id: 'flanger', title: 'Flanger', detail: 'swirl / jet' },
 ]
+const CONTROL_MODE_OPTIONS = WATER_EFFECTS_ENABLED
+  ? ALL_CONTROL_MODE_OPTIONS
+  : ALL_CONTROL_MODE_OPTIONS.filter((option) => option.id !== 'reverb' && option.id !== 'flanger')
 
 const PRODUCER_TAGS: ProducerTag[] = [
   { id: 'daytrip', label: 'Daytrip', shortLabel: 'DT', path: '/audio/daytrip.mp3' },
@@ -748,7 +753,7 @@ function App() {
       })
     }
 
-    if (controlMode === 'reverb' || controlMode === 'flanger') {
+    if (WATER_EFFECTS_ENABLED && (controlMode === 'reverb' || controlMode === 'flanger')) {
       engine.filter.type = 'lowpass'
       q = 0.707
 
@@ -1112,7 +1117,7 @@ function App() {
       </header>
 
       <section className="panel notes-panel">
-        <h2>Producer: Audrey Shin</h2>
+        <h2>Producers: Audrey, Rebecca, Erika</h2>
         <div className="booth-meta row">
           <span className="booth-filter-status">{filterStatus}</span>
           <span className="booth-deck-status">
