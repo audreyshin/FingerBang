@@ -194,17 +194,14 @@ type ProducerTag = {
   path: string
 }
 
-const WATER_EFFECTS_ENABLED = false
+const DRIP_FRAMES_ENABLED = false
 
-const ALL_CONTROL_MODE_OPTIONS: Array<{ id: ControlMode; title: string; detail: string }> = [
+const CONTROL_MODE_OPTIONS: Array<{ id: ControlMode; title: string; detail: string }> = [
   { id: 'filter', title: 'Filter', detail: 'muffle / brighten' },
   { id: 'bass', title: 'Bass', detail: 'cut / boost lows' },
   { id: 'reverb', title: 'Reverb', detail: 'dream wash' },
   { id: 'flanger', title: 'Flanger', detail: 'swirl / jet' },
 ]
-const CONTROL_MODE_OPTIONS = WATER_EFFECTS_ENABLED
-  ? ALL_CONTROL_MODE_OPTIONS
-  : ALL_CONTROL_MODE_OPTIONS.filter((option) => option.id !== 'reverb' && option.id !== 'flanger')
 
 const PRODUCER_TAGS: ProducerTag[] = [
   { id: 'daytrip', label: 'Daytrip', shortLabel: 'DT', path: '/audio/daytrip.mp3' },
@@ -753,7 +750,7 @@ function App() {
       })
     }
 
-    if (WATER_EFFECTS_ENABLED && (controlMode === 'reverb' || controlMode === 'flanger')) {
+    if (controlMode === 'reverb' || controlMode === 'flanger') {
       engine.filter.type = 'lowpass'
       q = 0.707
 
@@ -1012,7 +1009,7 @@ function App() {
           // Drip crossfade animation using individual frame PNGs
           const dripWrap = dripWrapRefs.current[trackId]
           const imgs = dripImgPairRef.current[trackId]
-          if (dripWrap && imgs) {
+          if (DRIP_FRAMES_ENABLED && dripWrap && imgs) {
             dripWrap.style.opacity = isPlaying ? '1' : '0'
 
             if (isPlaying) {
@@ -1186,36 +1183,36 @@ function App() {
                   </span>
                 </div>
                 <div className="deck-platter-wrap">
-                  {/* Drip crossfade layer — behind the platter via z-index */}
-                  <div
-                    ref={(el) => {
-                      dripWrapRefs.current[trackId] = el ?? undefined
-                    }}
-                    className="deck-drip-wrap"
-                  >
-                    {/* Two images alternate opacity for smooth crossfade */}
-                    <img
+                  {DRIP_FRAMES_ENABLED ? (
+                    <div
                       ref={(el) => {
-                        const pair = dripImgPairRef.current[trackId] ?? [null, null]
-                        pair[0] = el
-                        dripImgPairRef.current[trackId] = pair
+                        dripWrapRefs.current[trackId] = el ?? undefined
                       }}
-                      className="deck-drip-frame"
-                      src="/drip-frames/drip_05.png"
-                      alt=""
-                    />
-                    <img
-                      ref={(el) => {
-                        const pair = dripImgPairRef.current[trackId] ?? [null, null]
-                        pair[1] = el
-                        dripImgPairRef.current[trackId] = pair
-                      }}
-                      className="deck-drip-frame"
-                      src="/drip-frames/drip_06.png"
-                      style={{ opacity: 0 }}
-                      alt=""
-                    />
-                  </div>
+                      className="deck-drip-wrap"
+                    >
+                      <img
+                        ref={(el) => {
+                          const pair = dripImgPairRef.current[trackId] ?? [null, null]
+                          pair[0] = el
+                          dripImgPairRef.current[trackId] = pair
+                        }}
+                        className="deck-drip-frame"
+                        src="/drip-frames/drip_05.png"
+                        alt=""
+                      />
+                      <img
+                        ref={(el) => {
+                          const pair = dripImgPairRef.current[trackId] ?? [null, null]
+                          pair[1] = el
+                          dripImgPairRef.current[trackId] = pair
+                        }}
+                        className="deck-drip-frame"
+                        src="/drip-frames/drip_06.png"
+                        style={{ opacity: 0 }}
+                        alt=""
+                      />
+                    </div>
+                  ) : null}
                   <div
                     ref={(el) => {
                       platterRefs.current[trackId] = el ?? undefined
