@@ -25,6 +25,12 @@ export interface SensorCalibration {
   maxDetected: number | null
 }
 
+export interface AccelHistory {
+  x: number[]
+  y: number[]
+  z: number[]
+}
+
 export interface SensorRuntimeState {
   id: string
   label: string
@@ -34,5 +40,6 @@ export interface SensorRuntimeState {
   normalizedValues: Record<string, number>
   calibration: SensorCalibration
   history: number[]
+  accelHistory: AccelHistory
   lastUpdatedAt: number | null
 }

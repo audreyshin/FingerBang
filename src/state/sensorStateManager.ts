@@ -30,6 +30,7 @@ const createInitialSensorState = (sensor: SensorDefinition): SensorRuntimeState 
     maxDetected: null,
   },
   history: [],
+  accelHistory: { x: [], y: [], z: [] },
   lastUpdatedAt: null,
 })
 
@@ -87,6 +88,18 @@ const reducer = (state: SensorStateStore, action: SensorAction): SensorStateStor
           ? current.history
           : [...current.history, historySource].slice(-MAX_HISTORY_POINTS)
 
+      const ax = action.packet.rawValues.accelX
+      const ay = action.packet.rawValues.accelY
+      const az = action.packet.rawValues.accelZ
+      const accelHistory =
+        ax !== undefined && ay !== undefined && az !== undefined
+          ? {
+              x: [...current.accelHistory.x, ax].slice(-MAX_HISTORY_POINTS),
+              y: [...current.accelHistory.y, ay].slice(-MAX_HISTORY_POINTS),
+              z: [...current.accelHistory.z, az].slice(-MAX_HISTORY_POINTS),
+            }
+          : current.accelHistory
+
       return {
         sensors: {
           ...state.sensors,
@@ -105,6 +118,7 @@ const reducer = (state: SensorStateStore, action: SensorAction): SensorStateStor
               maxDetected: nextMax,
             },
             history,
+            accelHistory,
             lastUpdatedAt: Date.now(),
           },
         },
@@ -129,6 +143,7 @@ const reducer = (state: SensorStateStore, action: SensorAction): SensorStateStor
               maxDetected: null,
             },
             history: [],
+            accelHistory: { x: [], y: [], z: [] },
             lastUpdatedAt: null,
           },
         },

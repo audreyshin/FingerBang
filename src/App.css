@@ -1008,6 +1008,81 @@ button:disabled {
   margin: 0 0 0.4rem;
 }
 
+.imu-serial-strip {
+  margin: 0.5rem 0 0;
+  padding: 0.45rem 0.55rem;
+  font-family: 'Space Mono', ui-monospace, monospace;
+  font-size: 0.78rem;
+  color: rgba(255, 220, 245, 0.92);
+  background: rgba(8, 12, 22, 0.65);
+  border: 1px solid rgba(255, 130, 210, 0.18);
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+
+.imu-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.accel-trend-legend {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-family: 'Chakra Petch', sans-serif;
+}
+
+.accel-legend-x {
+  color: #7ec8ff;
+}
+
+.accel-legend-y {
+  color: #9af5c7;
+}
+
+.accel-legend-z {
+  color: #ffb8ec;
+}
+
+.accel-trend-graph {
+  width: 100%;
+  height: 140px;
+  display: block;
+  border-radius: 8px;
+  background: rgba(255, 130, 210, 0.03);
+  border: 1px solid rgba(255, 130, 210, 0.12);
+}
+
+.accel-trend-midline {
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 1;
+}
+
+.accel-trend-x {
+  fill: none;
+  stroke: #7ec8ff;
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+}
+
+.accel-trend-y {
+  fill: none;
+  stroke: #9af5c7;
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+}
+
+.accel-trend-z {
+  fill: none;
+  stroke: #ff9de0;
+  stroke-width: 1.6;
+  vector-effect: non-scaling-stroke;
+}
+
 /* ─── Track library ─────────────────────────────────────────── */
 
 .track-library {

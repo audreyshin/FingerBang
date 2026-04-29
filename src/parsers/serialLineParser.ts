@@ -50,7 +50,10 @@ export const mapParsedValuesToSensorPacket = (
   // If Bend_Percent is not present, derive 0-100 bendPercent from known signed outputs.
   if (normalizedValues.bendPercent === undefined) {
     const fallbackValue =
-      parsedLine.Negative_Bend ?? parsedLine.BiDirectional_Value ?? parsedLine.Centered_View
+      parsedLine.Negative_Bend ??
+      parsedLine.BiDirectional_Value ??
+      parsedLine.Centered_View ??
+      parsedLine.Flex
 
     if (fallbackValue !== undefined) {
       normalizedValues.bendPercent = Math.max(0, Math.min(100, Math.abs(fallbackValue)))

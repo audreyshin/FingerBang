@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ConnectionPanel } from './components/ConnectionPanel'
 import { SensorCard } from './components/SensorCard'
-import { DEFAULT_BAUD_RATE, SENSOR_DEFINITIONS } from './config/sensors'
+import { DEFAULT_BAUD_RATE, FLEX_SENSOR_ID, IMU_SENSOR_ID, SENSOR_DEFINITIONS } from './config/sensors'
 import { mapParsedValuesToSensorPacket, parseKeyValueSerialLine } from './parsers/serialLineParser'
 import { WebSerialConnection } from './services/webSerialConnection'
 import { useSensorStateManager } from './state/sensorStateManager'
@@ -358,8 +358,15 @@ function App() {
     SENSOR_DEFINITIONS,
   )
 
-  const primarySensor = useMemo(() => SENSOR_DEFINITIONS[0], [])
-  const primarySensorState = state.sensors[primarySensor.id]
+  const flexSensor = useMemo(
+    () => SENSOR_DEFINITIONS.find((definition) => definition.id === FLEX_SENSOR_ID) ?? SENSOR_DEFINITIONS[0]!,
+    [],
+  )
+  const imuSensor = useMemo(
+    () => SENSOR_DEFINITIONS.find((definition) => definition.id === IMU_SENSOR_ID) ?? null,
+    [],
+  )
+  const flexSensorState = state.sensors[flexSensor.id]
   const pushDebugEvent = (message: string) => {
     const timestamp = new Date().toLocaleTimeString()
     setDebugEvents((prev) => [...prev.slice(-11), `${timestamp} - ${message}`])
@@ -391,11 +398,17 @@ function App() {
 
     const disposeStatus = serialConnection.onStatusChange((status) => {
       pushDebugEvent(`Status changed to ${status}`)
-      setSensorConnectionStatus(primarySensor.id, status)
+      setSensorConnectionStatus(flexSensor.id, status)
+      if (imuSensor) {
+        setSensorConnectionStatus(imuSensor.id, status)
+      }
       if (status === 'disconnected') {
         clearNoDataTimeout()
         hasReceivedSerialRef.current = false
-        resetSensorData(primarySensor.id)
+        resetSensorData(flexSensor.id)
+        if (imuSensor) {
+          resetSensorData(imuSensor.id)
+        }
       }
     })
 
@@ -416,14 +429,26 @@ function App() {
         return
       }
 
-      const packet = mapParsedValuesToSensorPacket(parsed, primarySensor)
-      if (Object.keys(packet.rawValues).length === 0 && Object.keys(packet.normalizedValues).length === 0) {
+      const flexPacket = mapParsedValuesToSensorPacket(parsed, flexSensor)
+      const imuPacket = imuSensor ? mapParsedValuesToSensorPacket(parsed, imuSensor) : null
+
+      const flexHasData =
+        Object.keys(flexPacket.rawValues).length > 0 || Object.keys(flexPacket.normalizedValues).length > 0
+      const imuHasData =
+        imuPacket !== null &&
+        (Object.keys(imuPacket.rawValues).length > 0 || Object.keys(imuPacket.normalizedValues).length > 0)
+
+      if (!flexHasData && !imuHasData) {
         pushDebugEvent('Parsed line had no mapped sensor fields')
         return
       }
 
-      // Future mapping layer should subscribe to sensor state, not serial lines.
-      updateSensorData(primarySensor.id, packet, primarySensor.calibrationField)
+      if (flexHasData) {
+        updateSensorData(flexSensor.id, flexPacket, flexSensor.calibrationField)
+      }
+      if (imuHasData && imuSensor && imuPacket) {
+        updateSensorData(imuSensor.id, imuPacket)
+      }
     })
 
     return () => {
@@ -433,7 +458,7 @@ function App() {
       void serialConnection.disconnect()
       serialConnectionRef.current = null
     }
-  }, [primarySensor, resetSensorData, setSensorConnectionStatus, updateSensorData])
+  }, [flexSensor, imuSensor, resetSensorData, setSensorConnectionStatus, updateSensorData])
 
   const connect = async () => {
     setConnectionError(null)
@@ -466,12 +491,15 @@ function App() {
     clearNoDataTimeout()
     hasReceivedSerialRef.current = false
     await serialConnection.disconnect()
-    resetSensorData(primarySensor.id)
+    resetSensorData(flexSensor.id)
+    if (imuSensor) {
+      resetSensorData(imuSensor.id)
+    }
     pushDebugEvent('Disconnected and sensor state reset')
   }
 
-  const appConnectionStatus = primarySensorState?.connectionStatus ?? 'disconnected'
-  const bendValue = primarySensorState?.rawValues.biDirectional ?? 0
+  const appConnectionStatus = flexSensorState?.connectionStatus ?? 'disconnected'
+  const bendValue = flexSensorState?.rawValues.biDirectional ?? 0
   const activeTrackId = TRACK_IDS.find((trackId) => trackPlaybackState[trackId]) ?? null
   const nextTrackId = activeTrackId
     ? TRACK_IDS[(TRACK_IDS.indexOf(activeTrackId) + 1) % TRACK_IDS.length]
@@ -533,7 +561,7 @@ function App() {
     return { hits, misses, total: trainingPrompts.length }
   }, [trainingPrompts.length, trainingResults])
   const stageTrendPoints = useMemo(() => {
-    const values = primarySensorState?.history ?? []
+    const values = flexSensorState?.history ?? []
     if (values.length < 2) return null
 
     const width = 1200
@@ -548,7 +576,7 @@ function App() {
         return `${x},${y}`
       })
       .join(' ')
-  }, [primarySensorState?.history])
+  }, [flexSensorState?.history])
 
   const syncPlaybackState = useCallback((engine: AudioEngine) => {
     setTrackPlaybackState(
@@ -1411,9 +1439,10 @@ function App() {
       </section>
 
       <section className="sensor-grid">
-        {Object.values(state.sensors).map((sensor) => (
-          <SensorCard key={sensor.id} sensor={sensor} />
-        ))}
+        {SENSOR_DEFINITIONS.map((definition) => {
+          const sensor = state.sensors[definition.id]
+          return sensor ? <SensorCard key={definition.id} sensor={sensor} /> : null
+        })}
       </section>
 
       {showConnectionPanel && (
