@@ -15,23 +15,30 @@ const formatNumber = (value: number | null | undefined, digits = 2): string => {
 
 const ACCEL_GRAPH_W = 520
 const ACCEL_GRAPH_H = 160
+/** Exaggerate raw axis motion in the chart (values stay truthful in the readout) */
+const AXIS_VIZ_GAIN = 2.35
 
-const seriesToPoints = (values: number[], className: string): { points: string; className: string } | null => {
+const seriesToPoints = (
+  values: number[],
+  className: string,
+  valueScale = 1,
+): { points: string; className: string } | null => {
   if (values.length < 2) {
     return null
   }
 
-  let min = Math.min(...values)
-  let max = Math.max(...values)
+  const scaled = valueScale === 1 ? values : values.map((v) => v * valueScale)
+  let min = Math.min(...scaled)
+  let max = Math.max(...scaled)
   if (max - min < 0.02) {
-    min -= 0.1
-    max += 0.1
+    min -= 0.12
+    max += 0.12
   }
 
   const span = max - min
-  const pts = values
+  const pts = scaled
     .map((v, i) => {
-      const x = (i / (values.length - 1)) * ACCEL_GRAPH_W
+      const x = (i / (scaled.length - 1)) * ACCEL_GRAPH_W
       const t = (v - min) / span
       const y = ACCEL_GRAPH_H - t * (ACCEL_GRAPH_H - 8) - 4
       return `${x},${y}`
@@ -52,9 +59,9 @@ function ImuSensorCard({ sensor }: { sensor: SensorRuntimeState }) {
       ? `X:${x.toFixed(2)}  Y:${y.toFixed(2)}  Z:${z.toFixed(2)}`
       : 'Waiting for X:, Y:, Z: on the serial line…'
 
-  const xLine = seriesToPoints(h.x, 'accel-trend-x')
-  const yLine = seriesToPoints(h.y, 'accel-trend-y')
-  const zLine = seriesToPoints(h.z, 'accel-trend-z')
+  const xLine = seriesToPoints(h.x, 'accel-trend-x', AXIS_VIZ_GAIN)
+  const yLine = seriesToPoints(h.y, 'accel-trend-y', AXIS_VIZ_GAIN)
+  const zLine = seriesToPoints(h.z, 'accel-trend-z', AXIS_VIZ_GAIN)
 
   return (
     <section className="panel sensor-card sensor-card--imu">
@@ -67,6 +74,7 @@ function ImuSensorCard({ sensor }: { sensor: SensorRuntimeState }) {
       <p className="imu-serial-strip" title="Live acceleration (m/s²), same idea as Serial Monitor before mapping">
         {serialStrip}
       </p>
+      <p className="imu-audio-hint muted">Monitoring only — not wired into filter / FX.</p>
       <div className="metrics-grid imu-metrics">
         <article>
           <h3>X (m/s²)</h3>
@@ -82,7 +90,7 @@ function ImuSensorCard({ sensor }: { sensor: SensorRuntimeState }) {
         </article>
       </div>
       <div className="viz-group">
-        <h3>Axis fluctuation (each line scaled to its own min/max in the window)</h3>
+        <h3>Raw axes (chart boosted ×{AXIS_VIZ_GAIN.toFixed(2)} for visibility)</h3>
         <div className="accel-trend-legend">
           <span className="accel-legend accel-legend-x">X</span>
           <span className="accel-legend accel-legend-y">Y</span>

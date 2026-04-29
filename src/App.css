@@ -164,6 +164,168 @@ code {
   flex-wrap: wrap;
 }
 
+.booth-imu-note {
+  margin: 0.35rem 0 0;
+  max-width: 52rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.drum-debug-panel {
+  margin: 0.6rem 0 0.85rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 130, 210, 0.14);
+  background: rgba(255, 120, 200, 0.04);
+}
+
+.drum-debug-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.drum-debug-readout {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ─── IMU → drum hit (dashboard) ──────────────────────────────── */
+
+.drum-hit-panel {
+  margin: 0.65rem 0 0.35rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 130, 210, 0.18);
+  background:
+    linear-gradient(165deg, rgba(255, 110, 200, 0.06), rgba(120, 200, 255, 0.04)),
+    rgba(10, 12, 20, 0.35);
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.drum-hit-panel--flash {
+  animation: drum-hit-panel-flash 0.22s ease-out;
+}
+
+@keyframes drum-hit-panel-flash {
+  0% {
+    border-color: rgba(255, 210, 140, 0.55);
+    box-shadow:
+      0 0 0 1px rgba(255, 200, 120, 0.25),
+      0 0 28px rgba(255, 200, 110, 0.28);
+  }
+  100% {
+    border-color: rgba(255, 130, 210, 0.18);
+    box-shadow: none;
+  }
+}
+
+.drum-hit-panel-top {
+  margin-bottom: 0.35rem;
+}
+
+.drum-hit-panel-title {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: rgba(255, 200, 235, 0.95);
+}
+
+.drum-hit-panel-pct {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #9ae8ff;
+}
+
+.drum-hit-panel-visual {
+  position: relative;
+  height: 6px;
+  margin: 0 0 0.4rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.drum-hit-pulse-ring {
+  display: block;
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: linear-gradient(90deg, transparent, rgba(255, 230, 160, 0.85), transparent);
+  animation: drum-hit-pulse-ring 0.38s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes drum-hit-pulse-ring {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.25);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+}
+
+.drum-hit-slider-wrap {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+}
+
+.drum-hit-slider-cap {
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(200, 170, 210, 0.65);
+  white-space: nowrap;
+}
+
+.drum-hit-slider {
+  width: 100%;
+  accent-color: #ffc46b;
+  height: 0.45rem;
+  cursor: pointer;
+}
+
+.drum-hit-live-line {
+  margin: 0.55rem 0 0.15rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.drum-hit-live-sep {
+  opacity: 0.35;
+}
+
+.drum-hit-last-gain {
+  color: #ffc46b;
+  font-weight: 600;
+}
+
+.drum-hit-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
 .gap-sm {
   gap: 0.5rem;
 }
@@ -1023,6 +1185,88 @@ button:disabled {
 
 .imu-metrics {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.imu-metrics--5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .imu-metrics--5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.imu-audio-hint {
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.imu-audio-hint strong {
+  color: #ffcef4;
+  font-weight: 600;
+}
+
+.tilt-readout {
+  color: #ffc46b !important;
+}
+
+.shake-readout {
+  color: #7ef8ff !important;
+}
+
+.viz-group--layered {
+  margin-top: 1.1rem;
+}
+
+.accel-layer-stack {
+  position: relative;
+  min-height: 140px;
+}
+
+.accel-trend-graph--layer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  background: transparent;
+  border: none;
+}
+
+.accel-trend-graph--shake {
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.accel-trend-midline--soft {
+  stroke: rgba(255, 200, 120, 0.12);
+}
+
+.accel-legend-tilt {
+  color: #ffc46b;
+}
+
+.accel-legend-shake {
+  color: #7ef8ff;
+}
+
+.accel-trend-tilt {
+  fill: none;
+  stroke: #ffc46b;
+  stroke-width: 3.2;
+  opacity: 0.92;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 5px rgba(255, 180, 80, 0.35));
+}
+
+.accel-trend-shake {
+  fill: none;
+  stroke: #7ef8ff;
+  stroke-width: 2;
+  opacity: 0.95;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 6px rgba(120, 248, 255, 0.45));
 }
 
 .accel-trend-legend {

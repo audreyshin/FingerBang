@@ -1,6 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ConnectionPanel } from './components/ConnectionPanel'
 import { SensorCard } from './components/SensorCard'
+import {
+  DRUM_DEBOUNCE_MS,
+  DRUM_DEFAULT_SENSITIVITY_PERCENT,
+  DRUM_SAMPLE_PATH,
+  DRUM_SETTLE_DELTA,
+  DRUM_THRESHOLD_MAX,
+  DRUM_THRESHOLD_MIN,
+  accelDeltaMagnitude,
+  drumGainFromJerk,
+  playDrumOneShot,
+  thresholdFromSensitivityPercent,
+} from './audio/drumTrigger'
 import { DEFAULT_BAUD_RATE, FLEX_SENSOR_ID, IMU_SENSOR_ID, SENSOR_DEFINITIONS } from './config/sensors'
 import { mapParsedValuesToSensorPacket, parseKeyValueSerialLine } from './parsers/serialLineParser'
 import { WebSerialConnection } from './services/webSerialConnection'
@@ -16,6 +28,8 @@ type TrackId =
   | 'goodFeeling'
   | 'tears'
   | 'breakFree'
+  | 'oneMoreTime'
+  | 'fisherLosingIt'
 
 interface CuePoint {
   label: string
@@ -30,7 +44,18 @@ interface TrackMetadata {
   cues: CuePoint[]
 }
 
-const TRACK_IDS: TrackId[] = ['danzaKuduro', 'tocaToca', 'yQueFue', 'replay', 'levels', 'goodFeeling', 'tears', 'breakFree']
+const TRACK_IDS: TrackId[] = [
+  'danzaKuduro',
+  'tocaToca',
+  'yQueFue',
+  'replay',
+  'levels',
+  'goodFeeling',
+  'tears',
+  'breakFree',
+  'oneMoreTime',
+  'fisherLosingIt',
+]
 
 const TRACK_LIBRARY: Record<TrackId, TrackMetadata> = {
   danzaKuduro: {
@@ -121,6 +146,28 @@ const TRACK_LIBRARY: Record<TrackId, TrackMetadata> = {
       { label: 'Cue 3', ratio: 0.63 },
     ],
   },
+  oneMoreTime: {
+    title: 'One More Time',
+    artist: 'Daft Punk',
+    path: '/audio/daftpunk.mp3',
+    bpm: 123,
+    cues: [
+      { label: 'Cue 1', ratio: 0.12 },
+      { label: 'Cue 2', ratio: 0.38 },
+      { label: 'Cue 3', ratio: 0.65 },
+    ],
+  },
+  fisherLosingIt: {
+    title: 'Losing It (Extended)',
+    artist: 'FISHER (OZ)',
+    path: '/audio/fisher-losing-it-extended.mp3',
+    bpm: 124,
+    cues: [
+      { label: 'Cue 1', ratio: 0.1 },
+      { label: 'Cue 2', ratio: 0.35 },
+      { label: 'Cue 3', ratio: 0.62 },
+    ],
+  },
 }
 
 const createPlaybackState = (): Record<TrackId, boolean> =>
@@ -174,6 +221,7 @@ interface AudioEngine {
   flangerLfo: OscillatorNode
   flangerDepth: GainNode
   fxWetGains: Record<FxType, GainNode>
+  drumSample: AudioBuffer | null
 }
 
 type FxType = 'reverb' | 'flanger'
@@ -319,11 +367,26 @@ function App() {
   const [trainingFeedback, setTrainingFeedback] = useState<{ message: string; kind: TrainingResultStatus } | null>(null)
   const [filterStatus, setFilterStatus] = useState('Dry zone')
   const [debugEvents, setDebugEvents] = useState<string[]>([])
+  const [drumSensitivityPercent, setDrumSensitivityPercent] = useState(DRUM_DEFAULT_SENSITIVITY_PERCENT)
+  const drumSensitivityPercentRef = useRef(DRUM_DEFAULT_SENSITIVITY_PERCENT)
+  const [drumHud, setDrumHud] = useState({
+    jerkMag: 0,
+    threshold: thresholdFromSensitivityPercent(DRUM_DEFAULT_SENSITIVITY_PERCENT),
+    lastGain: 0,
+  })
+  const [drumHitFlash, setDrumHitFlash] = useState(false)
+  const [drumPulseSerial, setDrumPulseSerial] = useState(0)
+  const drumFlashClearRef = useRef<number | null>(null)
   const serialConnectionRef = useRef<WebSerialConnection | null>(null)
   const audioEngineRef = useRef<AudioEngine | null>(null)
   const waveformFrameRef = useRef<number | null>(null)
   const waveformLastPaintRef = useRef(0)
   const smoothedBendRef = useRef(0)
+  const imuLatestAccelRef = useRef<{ accelX?: number; accelY?: number; accelZ?: number }>({})
+  const imuConnectedRef = useRef(false)
+  const prevAccelSampleRef = useRef<{ x: number; y: number; z: number } | null>(null)
+  const drumArmedRef = useRef(true)
+  const lastDrumFireMsRef = useRef(0)
   const platterRefs = useRef<Partial<Record<TrackId, HTMLDivElement>>>({})
   const platterScaleRef = useRef<Record<string, number>>(
     TRACK_IDS.reduce<Record<string, number>>((a, id) => ({ ...a, [id]: 1 }), {}),
@@ -367,6 +430,103 @@ function App() {
     [],
   )
   const flexSensorState = state.sensors[flexSensor.id]
+  const imuSensorState = imuSensor ? state.sensors[imuSensor.id] : undefined
+
+  useEffect(() => {
+    drumSensitivityPercentRef.current = drumSensitivityPercent
+  }, [drumSensitivityPercent])
+
+  useEffect(() => {
+    imuConnectedRef.current = imuSensorState?.connectionStatus === 'connected'
+  }, [imuSensorState?.connectionStatus])
+
+  useEffect(() => {
+    const rv = imuSensorState?.rawValues
+    if (!rv) return
+    imuLatestAccelRef.current = {
+      accelX: rv.accelX,
+      accelY: rv.accelY,
+      accelZ: rv.accelZ,
+    }
+  }, [imuSensorState?.rawValues])
+
+  useEffect(() => {
+    const intervalMs = 40
+    let debugSkip = 0
+    const id = window.setInterval(() => {
+      const engine = audioEngineRef.current
+      const imuOk = imuConnectedRef.current
+      const raw = imuLatestAccelRef.current
+      const ax = raw.accelX
+      const ay = raw.accelY
+      const az = raw.accelZ
+
+      if (!imuOk || ax === undefined || ay === undefined || az === undefined || !Number.isFinite(ax + ay + az)) {
+        prevAccelSampleRef.current = null
+        drumArmedRef.current = true
+        debugSkip += 1
+        if (debugSkip >= 2) {
+          debugSkip = 0
+          const thr = thresholdFromSensitivityPercent(drumSensitivityPercentRef.current)
+          setDrumHud((prev) =>
+            prev.jerkMag === 0 && prev.threshold === thr ? prev : { jerkMag: 0, threshold: thr, lastGain: prev.lastGain },
+          )
+        }
+        return
+      }
+
+      const prev = prevAccelSampleRef.current
+      prevAccelSampleRef.current = { x: ax, y: ay, z: az }
+
+      const jerkMag = prev ? accelDeltaMagnitude(prev.x, prev.y, prev.z, ax, ay, az) : 0
+      const threshold = thresholdFromSensitivityPercent(drumSensitivityPercentRef.current)
+      const now = performance.now()
+
+      if (jerkMag < DRUM_SETTLE_DELTA) {
+        drumArmedRef.current = true
+      }
+
+      let firedGain = 0
+      if (
+        drumArmedRef.current &&
+        jerkMag >= threshold &&
+        now - lastDrumFireMsRef.current >= DRUM_DEBOUNCE_MS &&
+        engine?.drumSample
+      ) {
+        const gain = drumGainFromJerk(jerkMag, threshold)
+        playDrumOneShot(engine.context, engine.drumSample, gain)
+        drumArmedRef.current = false
+        lastDrumFireMsRef.current = now
+        firedGain = gain
+        setDrumPulseSerial((n) => n + 1)
+        if (drumFlashClearRef.current !== null) {
+          window.clearTimeout(drumFlashClearRef.current)
+        }
+        setDrumHitFlash(true)
+        drumFlashClearRef.current = window.setTimeout(() => {
+          setDrumHitFlash(false)
+          drumFlashClearRef.current = null
+        }, 140)
+      }
+
+      debugSkip += 1
+      if (debugSkip >= 2) {
+        debugSkip = 0
+        setDrumHud((prev) => ({
+          jerkMag,
+          threshold,
+          lastGain: firedGain > 0 ? firedGain : prev.lastGain,
+        }))
+      }
+    }, intervalMs)
+    return () => {
+      window.clearInterval(id)
+      if (drumFlashClearRef.current !== null) {
+        window.clearTimeout(drumFlashClearRef.current)
+        drumFlashClearRef.current = null
+      }
+    }
+  }, [])
   const pushDebugEvent = (message: string) => {
     const timestamp = new Date().toLocaleTimeString()
     setDebugEvents((prev) => [...prev.slice(-11), `${timestamp} - ${message}`])
@@ -495,6 +655,9 @@ function App() {
     if (imuSensor) {
       resetSensorData(imuSensor.id)
     }
+    prevAccelSampleRef.current = null
+    drumArmedRef.current = true
+    lastDrumFireMsRef.current = 0
     pushDebugEvent('Disconnected and sensor state reset')
   }
 
@@ -695,6 +858,18 @@ function App() {
     reverbWetGain.connect(masterGain)
     flangerWetGain.connect(masterGain)
     masterGain.connect(context.destination)
+
+    let drumSample: AudioBuffer | null = null
+    try {
+      const drumRes = await fetch(DRUM_SAMPLE_PATH)
+      if (drumRes.ok) {
+        const drumBytes = await drumRes.arrayBuffer()
+        drumSample = await context.decodeAudioData(drumBytes.slice(0))
+      }
+    } catch {
+      drumSample = null
+    }
+
     flangerLfo.start()
 
     const engine: AudioEngine = {
@@ -710,6 +885,7 @@ function App() {
       flangerLfo,
       flangerDepth,
       fxWetGains,
+      drumSample,
     }
     audioEngineRef.current = engine
     return engine
@@ -755,7 +931,7 @@ function App() {
     }
   }, [])
 
-  // Called whenever new bend data arrives to keep the selected bend effect in sync.
+  // Bend drives filter / FX; IMU jerk triggers one-shot drum hits (parallel to the mix).
   const updateFilterFromBend = useCallback((rawBendValue: number) => {
     const engine = audioEngineRef.current
     if (!engine) return
@@ -855,6 +1031,7 @@ function App() {
     engine.filter.gain.setTargetAtTime(gain, now, 0.03)
     engine.wetGain.gain.setTargetAtTime(wet, now, 0.03)
     engine.dryGain.gain.setTargetAtTime(dry, now, 0.03)
+
     setFilterStatus(`${status} | bend ${bend.toFixed(1)}`)
   }, [controlMode])
 
@@ -1149,6 +1326,44 @@ function App() {
             {activeTrackId ? `▶ ${TRACK_LIBRARY[activeTrackId].title}` : '— stopped —'}
             {' '}· up next: {TRACK_LIBRARY[nextTrackId].title}
           </span>
+        </div>
+        <p className="muted booth-imu-note">
+          <strong>Air drum:</strong> sharp wrist swings fire a one-shot sample from public/audio/drum.mp3 through your speakers — layered on top of the deck mix (or anything playing elsewhere). Flex still drives bend → filter / FX. IMU X/Y/Z graphs stay on the cards for debugging.
+        </p>
+        <div
+          className={`drum-hit-panel${drumHitFlash ? ' drum-hit-panel--flash' : ''}`}
+          aria-label="Drum hit trigger sensitivity"
+        >
+          <div className="drum-hit-panel-top row">
+            <span className="drum-hit-panel-title">Swing → drum hit</span>
+            <span className="drum-hit-panel-pct">{drumSensitivityPercent}%</span>
+          </div>
+          <div className="drum-hit-panel-visual" aria-hidden="true">
+            {drumPulseSerial > 0 ? <span key={drumPulseSerial} className="drum-hit-pulse-ring" /> : null}
+          </div>
+          <div className="drum-hit-slider-wrap">
+            <span className="drum-hit-slider-cap">Solid hits</span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={drumSensitivityPercent}
+              className="drum-hit-slider"
+              onChange={(event) => setDrumSensitivityPercent(Number(event.target.value))}
+            />
+            <span className="drum-hit-slider-cap">Hair trigger</span>
+          </div>
+          <p className="drum-hit-live-line muted">
+            <span>‖Δa‖ (last frame): {drumHud.jerkMag.toFixed(2)}</span>
+            <span className="drum-hit-live-sep">|</span>
+            <span>Threshold: {drumHud.threshold.toFixed(2)}</span>
+            <span className="drum-hit-live-sep">|</span>
+            <span className="drum-hit-last-gain">Last gain: {drumHud.lastGain.toFixed(2)}</span>
+          </p>
+          <p className="muted drum-hit-hint">
+            Jerk = magnitude of change between consecutive accel samples (any direction). Threshold span {DRUM_THRESHOLD_MIN}–{DRUM_THRESHOLD_MAX} m/s² when sensitivity is 0–100%. Debounce {DRUM_DEBOUNCE_MS} ms + settle ‖Δa‖ &lt; {DRUM_SETTLE_DELTA} before re-arm.
+          </p>
         </div>
         {audioError ? <p className="error">{audioError}</p> : null}
         <div className="deck-stage">
@@ -1460,6 +1675,12 @@ function App() {
             <p className="muted">
               If connection is stuck, confirm Arduino Serial Monitor is closed and select the usbmodem port.
             </p>
+            <div className="drum-debug-panel muted">
+              <p className="drum-debug-title">Drum trigger (‖Δa‖ jerk)</p>
+              <pre className="drum-debug-readout">{`‖Δa‖: ${drumHud.jerkMag.toFixed(3)}  ·  threshold (slider): ${drumHud.threshold.toFixed(2)}  ·  sensitivity: ${drumSensitivityPercent}%
+last hit gain: ${drumHud.lastGain.toFixed(3)}  ·  debounce ${DRUM_DEBOUNCE_MS} ms  ·  settle < ${DRUM_SETTLE_DELTA}
+sample: ${DRUM_SAMPLE_PATH}  ·  tweak maps in src/audio/drumTrigger.ts`}</pre>
+            </div>
             <pre className="muted">{debugEvents.length > 0 ? debugEvents.join('\n') : 'No debug events yet.'}</pre>
           </section>
         </div>

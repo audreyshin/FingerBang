@@ -18,6 +18,11 @@ type SensorAction =
 
 const MAX_HISTORY_POINTS = 180
 
+/* IMU tilt/shake derivation (disabled — was for audio mapping; re-enable with App.tsx IMU FX)
+const TILT_LOW_PASS_ALPHA = 0.11
+const deriveImuMotionScores = (...) => { ... }
+*/
+
 const createInitialSensorState = (sensor: SensorDefinition): SensorRuntimeState => ({
   id: sensor.id,
   label: sensor.label,
@@ -31,6 +36,10 @@ const createInitialSensorState = (sensor: SensorDefinition): SensorRuntimeState 
   },
   history: [],
   accelHistory: { x: [], y: [], z: [] },
+  imuLowPass: null,
+  tiltHistory: [],
+  shakeHistory: [],
+  imuMotion: { tilt: 0, shake: 0 },
   lastUpdatedAt: null,
 })
 
@@ -84,21 +93,38 @@ const reducer = (state: SensorStateStore, action: SensorAction): SensorStateStor
             : Math.max(current.calibration.maxDetected, calibrationValue)
       const historySource = action.packet.rawValues.biDirectional ?? action.packet.normalizedValues.bendPercent
       const history =
-        historySource === undefined
-          ? current.history
-          : [...current.history, historySource].slice(-MAX_HISTORY_POINTS)
+        current.type === 'flex' && historySource !== undefined
+          ? [...current.history, historySource].slice(-MAX_HISTORY_POINTS)
+          : current.history
 
-      const ax = action.packet.rawValues.accelX
-      const ay = action.packet.rawValues.accelY
-      const az = action.packet.rawValues.accelZ
-      const accelHistory =
-        ax !== undefined && ay !== undefined && az !== undefined
-          ? {
-              x: [...current.accelHistory.x, ax].slice(-MAX_HISTORY_POINTS),
-              y: [...current.accelHistory.y, ay].slice(-MAX_HISTORY_POINTS),
-              z: [...current.accelHistory.z, az].slice(-MAX_HISTORY_POINTS),
-            }
-          : current.accelHistory
+      const mergedRaw = { ...current.rawValues, ...action.packet.rawValues }
+      const ax = mergedRaw.accelX
+      const ay = mergedRaw.accelY
+      const az = mergedRaw.accelZ
+
+      let accelHistory = current.accelHistory
+      const imuLowPass = current.imuLowPass
+      const tiltHistory = current.tiltHistory
+      const shakeHistory = current.shakeHistory
+      const imuMotion = current.imuMotion
+
+      const packetTouchesAccel =
+        action.packet.rawValues.accelX !== undefined ||
+        action.packet.rawValues.accelY !== undefined ||
+        action.packet.rawValues.accelZ !== undefined
+
+      if (packetTouchesAccel && ax !== undefined && ay !== undefined && az !== undefined) {
+        accelHistory = {
+          x: [...current.accelHistory.x, ax].slice(-MAX_HISTORY_POINTS),
+          y: [...current.accelHistory.y, ay].slice(-MAX_HISTORY_POINTS),
+          z: [...current.accelHistory.z, az].slice(-MAX_HISTORY_POINTS),
+        }
+        // const derived = deriveImuMotionScores(ax, ay, az, current.imuLowPass)
+        // imuLowPass = derived.imuLowPass
+        // imuMotion = { tilt: derived.tilt, shake: derived.shake }
+        // tiltHistory = [...current.tiltHistory, derived.tilt].slice(-MAX_HISTORY_POINTS)
+        // shakeHistory = [...current.shakeHistory, derived.shake].slice(-MAX_HISTORY_POINTS)
+      }
 
       return {
         sensors: {
@@ -119,6 +145,10 @@ const reducer = (state: SensorStateStore, action: SensorAction): SensorStateStor
             },
             history,
             accelHistory,
+            imuLowPass,
+            tiltHistory,
+            shakeHistory,
+            imuMotion,
             lastUpdatedAt: Date.now(),
           },
         },
@@ -144,6 +174,10 @@ const reducer = (state: SensorStateStore, action: SensorAction): SensorStateStor
             },
             history: [],
             accelHistory: { x: [], y: [], z: [] },
+            imuLowPass: null,
+            tiltHistory: [],
+            shakeHistory: [],
+            imuMotion: { tilt: 0, shake: 0 },
             lastUpdatedAt: null,
           },
         },

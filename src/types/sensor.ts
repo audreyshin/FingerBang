@@ -31,6 +31,13 @@ export interface AccelHistory {
   z: number[]
 }
 
+export interface ImuMotionScores {
+  /** 0–100: slow orientation / gravity tilt — mapped to riser in audio */
+  tilt: number
+  /** 0–100: fast high-pass energy — mapped to stutter chop in audio */
+  shake: number
+}
+
 export interface SensorRuntimeState {
   id: string
   label: string
@@ -41,5 +48,10 @@ export interface SensorRuntimeState {
   calibration: SensorCalibration
   history: number[]
   accelHistory: AccelHistory
+  /** Low-pass gravity estimate; updated when accel samples arrive */
+  imuLowPass: { x: number; y: number; z: number } | null
+  tiltHistory: number[]
+  shakeHistory: number[]
+  imuMotion: ImuMotionScores
   lastUpdatedAt: number | null
 }
