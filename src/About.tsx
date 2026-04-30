@@ -1,4 +1,53 @@
+import { useEffect, useRef, useState } from 'react'
 import './About.css'
+
+function useScrollProgress() {
+  const [progress, setProgress] = useState(0)
+  useEffect(() => {
+    const onScroll = () => {
+      const el = document.documentElement
+      const scrolled = el.scrollTop
+      const total = el.scrollHeight - el.clientHeight
+      setProgress(total > 0 ? scrolled / total : 0)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  return progress
+}
+
+function useReveal<T extends HTMLElement>() {
+  const ref = useRef<T>(null)
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect() } },
+      { threshold: 0.12 }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+  return { ref, visible }
+}
+
+function RevealSection({ children, className = '', delay = 0 }: {
+  children: React.ReactNode
+  className?: string
+  delay?: number
+}) {
+  const { ref, visible } = useReveal<HTMLDivElement>()
+  return (
+    <div
+      ref={ref}
+      className={`reveal-wrap ${visible ? 'is-visible' : ''} ${className}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  )
+}
 
 const GitHubIcon = () => (
   <svg
@@ -16,8 +65,11 @@ const GitHubIcon = () => (
 )
 
 export function About() {
+  const scrollProgress = useScrollProgress()
+
   return (
     <main className="about-shell">
+      <div className="scroll-progress-bar" style={{ transform: `scaleX(${scrollProgress})` }} />
 
       {/* ── top nav ── */}
       <header className="about-header">
@@ -35,7 +87,7 @@ export function About() {
       </header>
 
       {/* ── hero ── */}
-      <section className="about-hero">
+      <section className="about-hero about-hero--animated">
         <p className="about-hero-eyebrow">₊⊹ 𝜗ৎ wellesley college · tangible user interfaces</p>
         <h1 className="about-hero-title">FingerBang</h1>
         <p className="about-hero-tagline">A Wearable Gestural Interface for Accessible Music Production</p>
@@ -57,6 +109,7 @@ export function About() {
       </section>
 
       {/* ── team ── */}
+      <RevealSection>
       <section className="about-section" id="team">
         <p className="about-section-label">˚꩜ meet the team</p>
         <h2 className="about-section-heading">the people behind the glove</h2>
@@ -126,8 +179,10 @@ export function About() {
 
         </div>
       </section>
+      </RevealSection>
 
       {/* ── problem statement ── */}
+      <RevealSection>
       <section className="about-section" id="problem">
         <p className="about-section-label">♡ problem statement</p>
         <h2 className="about-section-heading">the barrier is real</h2>
@@ -150,8 +205,10 @@ export function About() {
           </p>
         </div>
       </section>
+      </RevealSection>
 
       {/* ── conceptual design ── */}
+      <RevealSection>
       <section className="about-section" id="concept">
         <p className="about-section-label">⋆˚꩜｡⋆ conceptual design</p>
         <h2 className="about-section-heading">how the glove works as an interface</h2>
@@ -198,8 +255,10 @@ export function About() {
           </div>
         </div>
       </section>
+      </RevealSection>
 
       {/* ── design process ── */}
+      <RevealSection>
       <section className="about-section" id="process">
         <p className="about-section-label">₊⊹ design process</p>
         <h2 className="about-section-heading">how we got here</h2>
@@ -271,8 +330,10 @@ export function About() {
           </p>
         </div>
       </section>
+      </RevealSection>
 
       {/* ── demo ── */}
+      <RevealSection>
       <section className="about-section" id="demo">
         <p className="about-section-label">⋆˚꩜ prototype demo</p>
         <h2 className="about-section-heading">see it in action</h2>
@@ -288,8 +349,10 @@ export function About() {
           </div>
         </div>
       </section>
+      </RevealSection>
 
       {/* ── github ── */}
+      <RevealSection>
       <section className="about-section about-section--github" id="repo">
         <p className="about-section-label">୨୧ open source</p>
         <h2 className="about-section-heading">all the code is up</h2>
@@ -303,6 +366,7 @@ export function About() {
           audreyshin / FingerBang
         </a>
       </section>
+      </RevealSection>
 
       {/* ── footer ── */}
       <footer className="about-footer">
