@@ -338,15 +338,16 @@ export function About() {
         <p className="about-section-label">⋆˚꩜ prototype demo</p>
         <h2 className="about-section-heading">see it in action</h2>
         <p className="about-body">
-          A short demo showing glove connection, gesture-to-effect mapping, and the training mode in action.
+          A short demo showing the glove controlling live audio effects and the wrist-triggered drum hit.
         </p>
-        <div className="about-video-placeholder">
-          {/* paste a YouTube/Vimeo <iframe> here when you have the video */}
-          <div className="about-video-placeholder-inner">
-            <span className="about-video-placeholder-icon">▶</span>
-            <p className="about-video-placeholder-text">demo video coming soon</p>
-            <p className="about-image-hint">paste a YouTube or Vimeo embed here</p>
-          </div>
+        <div className="about-video-frame">
+          <iframe
+            className="about-video"
+            src="https://www.youtube.com/embed/NcWHzZKmbso"
+            title="FingerBang functional prototype demo"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
         </div>
       </section>
       </RevealSection>

@@ -355,6 +355,7 @@ const createImpulseResponse = (context: AudioContext, duration = 2.2, decay = 2.
 function App() {
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const [showConnectionPanel, setShowConnectionPanel] = useState(false)
+  const [showGuide, setShowGuide] = useState(false)
   const [audioError, setAudioError] = useState<string | null>(null)
   const [trackPlaybackState, setTrackPlaybackState] = useState<Record<TrackId, boolean>>(createPlaybackState)
   const [trackTimeline, setTrackTimeline] = useState<Record<TrackId, { currentTime: number; duration: number }>>(
@@ -1308,7 +1309,7 @@ function App() {
   }
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell${showGuide ? ' guide-mode' : ''}`}>
       <header className="app-header">
         <div>
           <p className="eyebrow">experience euphoria</p>
@@ -1323,6 +1324,13 @@ function App() {
           <span className={`status-badge status-${appConnectionStatus}`}>
             {appConnectionStatus === 'connected' ? 'linked 👅' : appConnectionStatus === 'connecting' ? 'linking...' : 'unlinked'}
           </span>
+          <button
+            className={`secondary guide-toggle${showGuide ? ' is-active' : ''}`}
+            onClick={() => setShowGuide((v) => !v)}
+            title="Toggle beginner guide labels"
+          >
+            {showGuide ? 'Guide on' : 'Guide off'}
+          </button>
           <button className="secondary" onClick={() => setShowConnectionPanel((v) => !v)}>
             {showConnectionPanel ? 'Hide Setup ↑' : 'Setup ↓'}
           </button>
@@ -1339,6 +1347,11 @@ function App() {
           </span>
         </div>
         {audioError ? <p className="error">{audioError}</p> : null}
+        {showGuide && (
+          <div className="guide-tip">
+            <strong>Welcome to FingerBang.</strong> This is your DJ booth. Connect your glove via USB (Setup ↓), pick a track below, hit play, then use your glove to perform. Toggle <em>Guide off</em> when you're ready to perform without training wheels.
+          </div>
+        )}
         <div className="deck-drum-row">
         <div className="deck-main-col">
         <div className="deck-stage">
@@ -1465,8 +1478,18 @@ function App() {
           })}
         </div>
         <div className="control-rack">
+          {showGuide && (
+            <p className="guide-tip guide-tip--inline">
+              <strong>Deck A</strong> — current track, progress, and live waveform. Hit ▶ in the track crate below to start playing.
+            </p>
+          )}
           <section className="control-bank" aria-label="Bend control bank">
             <p className="control-bank-label">Bend control</p>
+            {showGuide && (
+              <p className="guide-tip guide-tip--sm">
+                Pick an effect, then bend your glove finger left or right. Try <em>Filter</em> first, it is the clearest one.
+              </p>
+            )}
             <div className="selector-grid selector-grid-controls" role="group" aria-label="Bend control select">
               {CONTROL_MODE_OPTIONS.map((option) => (
                 <button
@@ -1489,6 +1512,11 @@ function App() {
           </section>
           <section className="control-bank producer-tag-bank" aria-label="Producer tags">
             <p className="control-bank-label">Producer tags</p>
+            {showGuide && (
+              <p className="guide-tip guide-tip--sm">
+                Tap to fire one-shot sounds instantly. No glove needed.
+              </p>
+            )}
             <div className="producer-tag-grid">
               {PRODUCER_TAGS.map((tag) => (
                 <button
@@ -1510,6 +1538,11 @@ function App() {
           <p className="muted booth-imu-note">
             <strong>Air drum:</strong> sharp wrist swings fire a one-shot sample through your speakers, layered on top of the deck mix.
           </p>
+          {showGuide && (
+            <p className="guide-tip guide-tip--sm">
+              Swing your wrist like a drumstick. <strong>Sensitivity</strong> changes how hard you swing. <strong>Volume</strong> changes how loud the hit is.
+            </p>
+          )}
           <div
             className={`drum-hit-panel${drumHitFlash ? ' drum-hit-panel--flash' : ''}`}
             aria-label="Drum hit trigger sensitivity"
@@ -1574,6 +1607,11 @@ function App() {
           })()}
         </p>
         <div className="track-library">
+          {showGuide && (
+            <p className="guide-tip">
+              <strong>Track crate</strong> — choose a song, hit ▶, and use cue dots to jump to key moments. Training mode teaches gestures step by step.
+            </p>
+          )}
           <div className="track-library-top">
             <div>
               <p className="track-library-kicker">Track crate</p>

@@ -513,42 +513,26 @@
   color: rgba(200, 170, 210, 0.45);
 }
 
-/* ─── Video placeholder ────────────────────────────────────────── */
+/* ─── Demo video ───────────────────────────────────────────────── */
 
-.about-video-placeholder {
+.about-video-frame {
   margin-top: 1.5rem;
   border-radius: 14px;
-  border: 1px dashed rgba(126, 248, 255, 0.2);
+  border: 1px solid rgba(126, 248, 255, 0.2);
   background: rgba(126, 248, 255, 0.03);
   overflow: hidden;
   aspect-ratio: 16 / 9;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  box-shadow:
+    0 0 30px rgba(126, 248, 255, 0.08),
+    inset 0 0 28px rgba(255, 110, 200, 0.04);
 }
 
-.about-video-placeholder-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  text-align: center;
-  padding: 2rem;
-}
-
-.about-video-placeholder-icon {
-  font-size: 2.2rem;
-  color: rgba(126, 248, 255, 0.25);
-}
-
-.about-video-placeholder-text {
-  margin: 0;
-  font-family: 'Chakra Petch', sans-serif;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(126, 248, 255, 0.3);
+.about-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #030308;
 }
 
 /* ─── GitHub section ───────────────────────────────────────────── */

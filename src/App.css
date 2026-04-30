@@ -62,6 +62,61 @@
     0 0 60px rgba(126, 248, 255, 0.4);
 }
 
+.guide-toggle.is-active {
+  background: rgba(126, 248, 255, 0.12);
+  border-color: rgba(126, 248, 255, 0.5);
+  color: #7ef8ff;
+}
+
+.guide-tip {
+  background: rgba(126, 248, 255, 0.05);
+  border: 1px solid rgba(126, 248, 255, 0.18);
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: rgba(200, 240, 255, 0.75);
+  margin-bottom: 1rem;
+}
+
+.guide-tip strong {
+  color: rgba(126, 248, 255, 0.95);
+  font-weight: 600;
+}
+
+.guide-tip em {
+  color: rgba(255, 200, 240, 0.9);
+  font-style: normal;
+}
+
+.guide-tip--inline {
+  grid-column: 1 / -1;
+  margin-bottom: 0.75rem;
+}
+
+.guide-tip--sm {
+  font-size: 0.72rem;
+  padding: 0.5rem 0.75rem;
+  margin-top: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.guide-mode .control-rack {
+  grid-template-columns: 1fr;
+}
+
+.guide-mode .control-rack > .guide-tip {
+  margin-bottom: 0;
+}
+
+.guide-mode .producer-tag-bank {
+  min-width: 0;
+}
+
+.guide-mode .producer-tag-grid {
+  justify-content: flex-start;
+}
+
 .eyebrow {
   margin: 0;
   color: rgba(255, 160, 220, 0.7);
