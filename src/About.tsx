@@ -64,7 +64,6 @@ export function About() {
 
           <div className="about-team-card">
             <div className="about-team-photo-wrap">
-              {/* drop public/images/team-audrey.jpg here */}
               <img
                 src="/images/team-audrey.jpeg"
                 alt="Audrey Shin"
@@ -86,7 +85,6 @@ export function About() {
 
           <div className="about-team-card">
             <div className="about-team-photo-wrap">
-              {/* drop public/images/team-rebecca.jpg here */}
               <img
                 src="/images/team-rebecca.jpeg"
                 alt="Rebecca Friedman"
@@ -107,7 +105,6 @@ export function About() {
 
           <div className="about-team-card">
             <div className="about-team-photo-wrap">
-              {/* drop public/images/team-erika.jpg here */}
               <img
                 src="/images/team-erika.jpeg"
                 alt="Erika Chen"
@@ -120,7 +117,7 @@ export function About() {
               <p className="about-team-name">Erika Chen</p>
               <p className="about-team-role">Media Arts & Sciences and Music</p>
               <p className="about-team-bio">
-                Senior at Wellesley College. I've been playing an instrument since I was 11 — music has been central to my
+                Senior at Wellesley College. I've been playing an instrument since I was 11, music has been central to my
                 everyday life ever since. I wanted to explore what's possible outside of traditional instrumental music and
                 make the art form as innovative and accessible as possible for the next generation.
               </p>
@@ -173,7 +170,7 @@ export function About() {
             and when, scaffolding the contextual logic of DJing in a way that trial-and-error just doesn't.
           </p>
           <p className="about-body">
-            A typical session: put on the gloves, open the app, connect via USB. Select a track and a difficulty level —
+            A typical session: put on the gloves, open the app, connect via USB. Select a track and a difficulty level,
             difficulty controls how many finger mappings are active, so beginners aren't overwhelmed.
             Curl your index finger to apply reverb. Swing your wrist to drop a drum hit. As you get better,
             enable more mappings and more nuanced combinations through the settings.
@@ -241,7 +238,7 @@ export function About() {
           <p className="about-phase-label">phase 02 — hardware prototyping</p>
           <p className="about-body">
             The first functional prototype was a single flex sensor on an Arduino Uno, sending raw bend data over USB serial.
-            This iteration was intentionally scoped to validate just the data pipeline — reliable sensor ingestion, parsing,
+            This iteration was intentionally scoped to validate just the data pipeline, reliable sensor ingestion, parsing,
             and live visualization, no audio yet. Sensor output came through as key-value pairs
             (<code>Raw:523, Min:498, Max:611, BiDirectional_Value:-37</code>) parsed by the React + TypeScript web app.
           </p>
@@ -315,196 +312,6 @@ export function About() {
       <footer className="about-footer">
         <a href="#" className="about-footer-link">open the controller ↗</a>
         <p className="about-footer-note">audio files used for educational purposes only · not for redistribution</p>
-        <p className="about-footer-note">made with love (and a concerning amount of accelerometer data)</p>
-      </footer>
-
-    </main>
-  )
-}
-        <span className="about-nav-ghost" aria-hidden="true" />
-      </header>
-
-      {/* ── hero ── */}
-      <section className="about-hero">
-        <p className="about-hero-eyebrow">₊⊹ 𝜗ৎ a wearable dj glove</p>
-        <h1 className="about-hero-title">FingerBang</h1>
-        <p className="about-hero-sub">
-          bend your fingers to morph the music. swing your wrist to hit a drum.
-          <br />no controller, no knob — just your hand.
-        </p>
-        <a
-          className="about-hero-cta"
-          href="/"
-        >
-          open the controller ↗
-        </a>
-      </section>
-
-      {/* ── the idea ── */}
-      <section className="about-section">
-        <p className="about-section-label">♡ the idea</p>
-        <h2 className="about-section-heading">what if your hands were the instrument?</h2>
-        <p className="about-body">
-          FingerBang started as a question: what does it feel like to perform music with your body, not your gear?
-          We wanted to make something that felt like being a musician even if you've never touched a mixer.
-          The glove is the whole interface — bend a finger to filter a track, swing your wrist to drop a drum hit on the beat.
-          It all runs in the browser, talks to a real Arduino over USB, and layers sounds live on top of whatever's playing.
-        </p>
-      </section>
-
-      {/* ── how it works ── */}
-      <section className="about-section">
-        <p className="about-section-label">⋆˚꩜｡⋆ how it works</p>
-        <h2 className="about-section-heading">the signal chain</h2>
-        <div className="about-chain">
-          <div className="about-chain-step">
-            <span className="about-chain-num">01</span>
-            <div>
-              <p className="about-chain-title">flex sensor on your finger</p>
-              <p className="about-chain-desc">
-                a resistive strip bends with your finger. the resistance changes, which changes the voltage on an analog
-                pin on the Arduino. that number gets streamed to the browser over USB serial at 9600 baud.
-              </p>
-            </div>
-          </div>
-          <div className="about-chain-step">
-            <span className="about-chain-num">02</span>
-            <div>
-              <p className="about-chain-title">LSM303 accelerometer on your wrist</p>
-              <p className="about-chain-desc">
-                an IMU reads X, Y, Z acceleration on every frame. the browser calculates the jerk — how fast
-                acceleration changed — across all three axes at once. a sharp swing spikes that number above
-                the threshold and fires a drum hit.
-              </p>
-            </div>
-          </div>
-          <div className="about-chain-step">
-            <span className="about-chain-num">03</span>
-            <div>
-              <p className="about-chain-title">web serial API in the browser</p>
-              <p className="about-chain-desc">
-                no app, no backend. Chrome's Web Serial API reads the USB data directly. the parser is
-                tolerant of formatting noise so it picks up sensor values even if the Arduino sketch isn't perfect.
-              </p>
-            </div>
-          </div>
-          <div className="about-chain-step">
-            <span className="about-chain-num">04</span>
-            <div>
-              <p className="about-chain-title">web audio API node graph</p>
-              <p className="about-chain-desc">
-                flex bend maps to a filter, bass shelf, reverb, or flanger — all built by hand
-                with Web Audio nodes. the flanger uses a real LFO oscillator driving the delay time.
-                drum hits use a preloaded AudioBuffer fired as a one-shot, layered right on top of the deck mix.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── gestures ── */}
-      <section className="about-section">
-        <p className="about-section-label">୨୧ gestures</p>
-        <h2 className="about-section-heading">what your hand actually does</h2>
-        <div className="about-gestures">
-          <div className="about-gesture-card">
-            <p className="about-gesture-name">bend left</p>
-            <p className="about-gesture-desc">muffle the mix (low-pass filter), add reverb room, or bass cut — depending on mode</p>
-          </div>
-          <div className="about-gesture-card">
-            <p className="about-gesture-name">bend right</p>
-            <p className="about-gesture-desc">brighten the mix (high-pass filter), add reverb wash, bass boost, or deep flanger sweep</p>
-          </div>
-          <div className="about-gesture-card">
-            <p className="about-gesture-name">hold center</p>
-            <p className="about-gesture-desc">dead zone — signal returns to dry, no effect</p>
-          </div>
-          <div className="about-gesture-card about-gesture-card--accent">
-            <p className="about-gesture-name">sharp wrist swing ↗</p>
-            <p className="about-gesture-desc">triggers a drum hit. how hard you swing = how loud the hit. any direction counts — it's measuring total motion magnitude</p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── tech stack ── */}
-      <section className="about-section">
-        <p className="about-section-label">⋆˚꩜ built with</p>
-        <h2 className="about-section-heading">the stack</h2>
-        <div className="about-stack">
-          {[
-            { name: 'React 19', detail: 'all UI components' },
-            { name: 'TypeScript', detail: 'typed sensor data, audio state, everything' },
-            { name: 'Vite', detail: 'dev server + build' },
-            { name: 'Web Serial API', detail: 'browser ↔ Arduino over USB' },
-            { name: 'Web Audio API', detail: 'filter, reverb, flanger LFO, drum one-shots — all hand-wired nodes' },
-            { name: 'Arduino Uno', detail: 'reads flex + IMU, streams serial' },
-            { name: 'Flex sensor', detail: 'bend detection on finger' },
-            { name: 'LSM303 IMU', detail: 'X/Y/Z acceleration for drum trigger' },
-          ].map(({ name, detail }) => (
-            <div className="about-stack-item" key={name}>
-              <span className="about-stack-name">{name}</span>
-              <span className="about-stack-detail">{detail}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── process ── */}
-      <section className="about-section">
-        <p className="about-section-label">₊⊹ process</p>
-        <h2 className="about-section-heading">how we got here</h2>
-        <div className="about-process">
-          <div className="about-process-step">
-            <span className="about-process-dot" />
-            <div>
-              <p className="about-process-title">serial foundation</p>
-              <p className="about-process-desc">started by getting the Arduino talking to the browser — just raw numbers in, parse them, show them on screen. no audio yet.</p>
-            </div>
-          </div>
-          <div className="about-process-step">
-            <span className="about-process-dot" />
-            <div>
-              <p className="about-process-title">flex → filter</p>
-              <p className="about-process-desc">wired the bend value to a Web Audio lowpass filter. first time you bend your finger and the music muffles — that's the moment it clicks.</p>
-            </div>
-          </div>
-          <div className="about-process-step">
-            <span className="about-process-dot" />
-            <div>
-              <p className="about-process-title">adding the IMU + trying stutter</p>
-              <p className="about-process-desc">added the accelerometer and tried mapping shake to a beat-repeat stutter effect using an AudioWorklet ring buffer. it worked but glitched a lot and was hard to perform with.</p>
-            </div>
-          </div>
-          <div className="about-process-step">
-            <span className="about-process-dot" />
-            <div>
-              <p className="about-process-title">pivot to drum trigger</p>
-              <p className="about-process-desc">scrapped stutter entirely. instead of modifying the music, the glove just plays a sound on top of it — like a drumstick. a sharp swing fires a hit. immediate, reliable, performable.</p>
-            </div>
-          </div>
-          <div className="about-process-step">
-            <span className="about-process-dot" />
-            <div>
-              <p className="about-process-title">deck system + training mode</p>
-              <p className="about-process-desc">built out the full DJ deck UI — track library, cue points, waveform display — and a training mode that teaches you the gestures while Levels by Avicii plays.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── team ── */}
-      <section className="about-section about-section--team">
-        <p className="about-section-label">˚꩜ the team</p>
-        <h2 className="about-section-heading">Audrey, Rebecca, Erika</h2>
-        <p className="about-body about-body--centered">
-          made for class. designed to feel like real gear.
-          <br />audio is for educational use only — future version syncs to Apple Music or Spotify.
-        </p>
-      </section>
-
-      {/* ── footer ── */}
-      <footer className="about-footer">
-        <a href="/" className="about-footer-link">open the controller ↗</a>
         <p className="about-footer-note">made with love (and a concerning amount of accelerometer data)</p>
       </footer>
 
