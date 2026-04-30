@@ -220,16 +220,16 @@ export function About() {
                 className="about-image"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
               />
-              <p className="about-image-hint">upload as <code>public/images/sketch-01.png</code></p>
+              <p className="about-image-label">early concept sketch</p>
             </div>
             <div className="about-image-placeholder">
               <img
                 src="/images/sketch-02.png"
-                alt="Early concept sketch"
+                alt="Early concept prototype"
                 className="about-image"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
               />
-              <p className="about-image-hint">upload as <code>public/images/sketch-02.png</code></p>
+              <p className="about-image-label">early concept prototype</p>
             </div>
           </div>
         </div>
@@ -248,10 +248,10 @@ export function About() {
             unperformable. So we scrapped it. Instead of modifying the music, the glove now just plays a drum sound <em>on top</em>
             of it, like a drumstick. Sharp swing = hit. That decision made everything click.
           </p>
-          <div className="about-image-block">
+          <div className="about-image-block about-image-block--small">
             <div className="about-image-placeholder">
               <img
-                src="/images/glove-prototype.jpg"
+                src="/images/updated-prototype.png"
                 alt="Updated glove prototype"
                 className="about-image"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
@@ -293,10 +293,6 @@ export function About() {
       <section className="about-section about-section--github" id="repo">
         <p className="about-section-label">୨୧ open source</p>
         <h2 className="about-section-heading">all the code is up</h2>
-        <p className="about-body about-body--centered">
-          Full source code, hardware docs, and setup instructions live on GitHub.
-          <br />React + TypeScript + Vite + Web Audio API + Web Serial API. No backend.
-        </p>
         <a
           href="https://github.com/audreyshin/FingerBang"
           target="_blank"
@@ -311,8 +307,6 @@ export function About() {
       {/* ── footer ── */}
       <footer className="about-footer">
         <a href="#" className="about-footer-link">open the controller ↗</a>
-        <p className="about-footer-note">audio files used for educational purposes only · not for redistribution</p>
-        <p className="about-footer-note">made with love (and a concerning amount of accelerometer data)</p>
       </footer>
 
     </main>

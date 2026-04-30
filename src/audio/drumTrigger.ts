@@ -42,8 +42,14 @@ export function drumGainFromJerk(jerkMag: number, threshold: number): number {
   return Math.min(1, 0.28 + t * 0.72)
 }
 
-export function playDrumOneShot(context: AudioContext, buffer: AudioBuffer, gain: number): void {
-  const g = Math.min(1, Math.max(0.06, gain))
+/** `volumeMult` > 1.0 boosts beyond unity — values up to 2.0 are safe on most systems. */
+export function playDrumOneShot(
+  context: AudioContext,
+  buffer: AudioBuffer,
+  gain: number,
+  volumeMult = 1,
+): void {
+  const g = Math.max(0.06, gain) * Math.max(0, volumeMult)
   void context.resume().then(() => {
     const src = context.createBufferSource()
     const gainNode = context.createGain()
