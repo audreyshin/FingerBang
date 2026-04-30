@@ -1309,6 +1309,12 @@ function App() {
           <p className="eyebrow">experience euphoria</p>
         </div>
         <div className="header-meta">
+          <a
+            className="header-website-link"
+            href="#about"
+          >
+            website ↗
+          </a>
           <span className={`status-badge status-${appConnectionStatus}`}>
             {appConnectionStatus === 'connected' ? 'linked 👅' : appConnectionStatus === 'connecting' ? 'linking...' : 'unlinked'}
           </span>
@@ -1326,44 +1332,6 @@ function App() {
             {activeTrackId ? `▶ ${TRACK_LIBRARY[activeTrackId].title}` : '— stopped —'}
             {' '}· up next: {TRACK_LIBRARY[nextTrackId].title}
           </span>
-        </div>
-        <p className="muted booth-imu-note">
-          <strong>Air drum:</strong> sharp wrist swings fire a one-shot sample from public/audio/drum.mp3 through your speakers — layered on top of the deck mix (or anything playing elsewhere). Flex still drives bend → filter / FX. IMU X/Y/Z graphs stay on the cards for debugging.
-        </p>
-        <div
-          className={`drum-hit-panel${drumHitFlash ? ' drum-hit-panel--flash' : ''}`}
-          aria-label="Drum hit trigger sensitivity"
-        >
-          <div className="drum-hit-panel-top row">
-            <span className="drum-hit-panel-title">Swing → drum hit</span>
-            <span className="drum-hit-panel-pct">{drumSensitivityPercent}%</span>
-          </div>
-          <div className="drum-hit-panel-visual" aria-hidden="true">
-            {drumPulseSerial > 0 ? <span key={drumPulseSerial} className="drum-hit-pulse-ring" /> : null}
-          </div>
-          <div className="drum-hit-slider-wrap">
-            <span className="drum-hit-slider-cap">Solid hits</span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={1}
-              value={drumSensitivityPercent}
-              className="drum-hit-slider"
-              onChange={(event) => setDrumSensitivityPercent(Number(event.target.value))}
-            />
-            <span className="drum-hit-slider-cap">Hair trigger</span>
-          </div>
-          <p className="drum-hit-live-line muted">
-            <span>‖Δa‖ (last frame): {drumHud.jerkMag.toFixed(2)}</span>
-            <span className="drum-hit-live-sep">|</span>
-            <span>Threshold: {drumHud.threshold.toFixed(2)}</span>
-            <span className="drum-hit-live-sep">|</span>
-            <span className="drum-hit-last-gain">Last gain: {drumHud.lastGain.toFixed(2)}</span>
-          </p>
-          <p className="muted drum-hit-hint">
-            Jerk = magnitude of change between consecutive accel samples (any direction). Threshold span {DRUM_THRESHOLD_MIN}–{DRUM_THRESHOLD_MAX} m/s² when sensitivity is 0–100%. Debounce {DRUM_DEBOUNCE_MS} ms + settle ‖Δa‖ &lt; {DRUM_SETTLE_DELTA} before re-arm.
-          </p>
         </div>
         {audioError ? <p className="error">{audioError}</p> : null}
         <div className="deck-stage">
@@ -1650,6 +1618,45 @@ function App() {
             )
           })}
           </div>
+        </div>
+
+        <p className="muted booth-imu-note">
+          <strong>Air drum:</strong> sharp wrist swings fire a one-shot sample through your speakers, layered on top of the deck mix. Flex still drives bend → filter / FX.
+        </p>
+        <div
+          className={`drum-hit-panel${drumHitFlash ? ' drum-hit-panel--flash' : ''}`}
+          aria-label="Drum hit trigger sensitivity"
+        >
+          <div className="drum-hit-panel-top row">
+            <span className="drum-hit-panel-title">Swing → drum hit</span>
+            <span className="drum-hit-panel-pct">{drumSensitivityPercent}%</span>
+          </div>
+          <div className="drum-hit-panel-visual" aria-hidden="true">
+            {drumPulseSerial > 0 ? <span key={drumPulseSerial} className="drum-hit-pulse-ring" /> : null}
+          </div>
+          <div className="drum-hit-slider-wrap">
+            <span className="drum-hit-slider-cap">Solid hits</span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={drumSensitivityPercent}
+              className="drum-hit-slider"
+              onChange={(event) => setDrumSensitivityPercent(Number(event.target.value))}
+            />
+            <span className="drum-hit-slider-cap">Hair trigger</span>
+          </div>
+          <p className="drum-hit-live-line muted">
+            <span>‖Δa‖ (last frame): {drumHud.jerkMag.toFixed(2)}</span>
+            <span className="drum-hit-live-sep">|</span>
+            <span>Threshold: {drumHud.threshold.toFixed(2)}</span>
+            <span className="drum-hit-live-sep">|</span>
+            <span className="drum-hit-last-gain">Last gain: {drumHud.lastGain.toFixed(2)}</span>
+          </p>
+          <p className="muted drum-hit-hint">
+            Jerk = magnitude of change between consecutive accel samples (any direction). Threshold span {DRUM_THRESHOLD_MIN}–{DRUM_THRESHOLD_MAX} m/s² when sensitivity is 0–100%. Debounce {DRUM_DEBOUNCE_MS} ms + settle ‖Δa‖ &lt; {DRUM_SETTLE_DELTA} before re-arm.
+          </p>
         </div>
       </section>
 

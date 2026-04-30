@@ -1,0 +1,525 @@
+/* ─── About page ─────────────────────────────────────────────── */
+
+.about-shell {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 1.5rem 6rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Nav ──────────────────────────────────────────────────────── */
+
+.about-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  background: rgba(8, 10, 15, 0.88);
+  backdrop-filter: blur(18px);
+}
+
+.about-nav-back {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: rgba(255, 160, 220, 0.65);
+  transition: color 0.15s;
+}
+
+.about-nav-back:hover {
+  color: rgba(255, 200, 240, 0.9);
+}
+
+.about-nav-logo {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-decoration: none;
+  background: linear-gradient(100deg, #ffffff 0%, #ffb8ec 50%, #d96fc4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.about-nav-github {
+  display: flex;
+  align-items: center;
+  color: rgba(255, 160, 220, 0.6);
+  transition: color 0.15s;
+  text-decoration: none;
+}
+
+.about-nav-github:hover {
+  color: rgba(255, 200, 240, 0.95);
+}
+
+.about-nav-github .github-icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+/* ─── Hero ─────────────────────────────────────────────────────── */
+
+.about-hero {
+  padding: 5rem 0 4.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.about-hero-eyebrow {
+  margin: 0;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 160, 220, 0.7);
+}
+
+.about-hero-title {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(3.2rem, 10vw, 6.5rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-transform: uppercase;
+  background: linear-gradient(110deg, #ffffff 0%, #ffb8ec 45%, #d96fc4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 48px rgba(255, 100, 200, 0.22));
+}
+
+.about-hero-tagline {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(0.85rem, 1.8vw, 1.05rem);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: rgba(255, 200, 235, 0.65);
+}
+
+.about-hero-sub {
+  margin: 0;
+  font-size: 1rem;
+  color: rgba(220, 190, 215, 0.75);
+  line-height: 1.7;
+  max-width: 38rem;
+}
+
+.about-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.about-hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #7ef8ff;
+  text-shadow: 0 0 8px rgba(126, 248, 255, 0.9), 0 0 22px rgba(126, 248, 255, 0.5);
+  border: 1px solid rgba(126, 248, 255, 0.3);
+  border-radius: 999px;
+  padding: 0.55rem 1.4rem;
+  transition: all 0.15s ease;
+}
+
+.about-hero-cta:hover {
+  color: #b8fdff;
+  border-color: rgba(126, 248, 255, 0.6);
+  text-shadow: 0 0 10px rgba(180, 255, 255, 1), 0 0 28px rgba(126, 248, 255, 0.8);
+  background: rgba(126, 248, 255, 0.05);
+}
+
+.about-hero-cta--ghost {
+  color: rgba(255, 200, 235, 0.65);
+  text-shadow: none;
+  border-color: rgba(255, 130, 210, 0.25);
+}
+
+.about-hero-cta--ghost:hover {
+  color: rgba(255, 220, 245, 0.9);
+  text-shadow: none;
+  border-color: rgba(255, 130, 210, 0.5);
+  background: rgba(255, 130, 210, 0.05);
+}
+
+.about-hero-cta .github-icon {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+  opacity: 0.75;
+}
+
+/* ─── Section base ─────────────────────────────────────────────── */
+
+.about-section {
+  padding: 3.5rem 0;
+  border-top: 1px solid rgba(255, 130, 210, 0.1);
+}
+
+.about-section-label {
+  margin: 0 0 0.55rem;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.63rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 160, 220, 0.5);
+}
+
+.about-section-heading {
+  margin: 0 0 1.8rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  background: linear-gradient(95deg, #fff 0%, #ffcef4 80%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.about-body-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.about-body {
+  margin: 0;
+  font-size: 0.97rem;
+  line-height: 1.82;
+  color: rgba(215, 195, 215, 0.75);
+}
+
+.about-body em {
+  color: rgba(255, 200, 235, 0.9);
+  font-style: normal;
+}
+
+.about-body code {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.82em;
+  background: rgba(255, 130, 210, 0.1);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  color: rgba(255, 200, 235, 0.85);
+}
+
+.about-body--centered {
+  text-align: center;
+  margin: 0 auto;
+}
+
+/* ─── Team ─────────────────────────────────────────────────────── */
+
+.about-team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.25rem;
+}
+
+.about-team-card {
+  padding: 1.4rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 130, 210, 0.14);
+  background: linear-gradient(155deg, rgba(255, 110, 200, 0.05), rgba(120, 180, 255, 0.03));
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.about-team-photo-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 130, 210, 0.22);
+  flex-shrink: 0;
+}
+
+.about-team-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: relative;
+  z-index: 1;
+}
+
+.about-team-photo-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, rgba(255, 80, 190, 0.18), rgba(120, 200, 255, 0.12));
+  color: rgba(255, 200, 235, 0.5);
+  z-index: 0;
+}
+
+.about-team-name {
+  margin: 0 0 0.2rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: rgba(255, 220, 245, 0.95);
+}
+
+.about-team-role {
+  margin: 0 0 0.6rem;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.63rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 160, 220, 0.55);
+}
+
+.about-team-bio {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: rgba(205, 185, 210, 0.7);
+}
+
+/* ─── Phase blocks ─────────────────────────────────────────────── */
+
+.about-phase {
+  margin-bottom: 2.8rem;
+  padding-bottom: 2.8rem;
+  border-bottom: 1px solid rgba(255, 130, 210, 0.07);
+}
+
+.about-phase:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.about-phase-label {
+  margin: 0 0 0.75rem;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: rgba(255, 130, 210, 0.5);
+  text-transform: uppercase;
+}
+
+/* ─── Image placeholders ───────────────────────────────────────── */
+
+.about-image-block {
+  margin-top: 1.5rem;
+}
+
+.about-image-block--row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.about-image-placeholder {
+  position: relative;
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 130, 210, 0.22);
+  background: rgba(255, 110, 200, 0.03);
+  overflow: hidden;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 1.2rem;
+  text-align: center;
+}
+
+.about-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.about-image-label {
+  margin: 0.5rem 0 0;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 210, 240, 0.85);
+}
+
+.about-image-hint {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  color: rgba(200, 170, 210, 0.3);
+}
+
+.about-image-hint code {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.78em;
+  color: rgba(200, 170, 210, 0.45);
+}
+
+/* ─── Video placeholder ────────────────────────────────────────── */
+
+.about-video-placeholder {
+  margin-top: 1.5rem;
+  border-radius: 14px;
+  border: 1px dashed rgba(126, 248, 255, 0.2);
+  background: rgba(126, 248, 255, 0.03);
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.about-video-placeholder-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+  padding: 2rem;
+}
+
+.about-video-placeholder-icon {
+  font-size: 2.2rem;
+  color: rgba(126, 248, 255, 0.25);
+}
+
+.about-video-placeholder-text {
+  margin: 0;
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(126, 248, 255, 0.3);
+}
+
+/* ─── GitHub section ───────────────────────────────────────────── */
+
+.about-section--github {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.about-section--github .about-section-label,
+.about-section--github .about-section-heading {
+  text-align: center;
+}
+
+.about-github-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 1.2rem;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  color: rgba(255, 220, 245, 0.9);
+  background: rgba(255, 130, 210, 0.07);
+  border: 1px solid rgba(255, 130, 210, 0.22);
+  border-radius: 12px;
+  padding: 0.85rem 1.6rem;
+  transition: all 0.15s ease;
+}
+
+.about-github-btn:hover {
+  background: rgba(255, 130, 210, 0.13);
+  border-color: rgba(255, 130, 210, 0.4);
+  color: #fff;
+}
+
+.about-github-btn .github-icon {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+/* ─── Footer ───────────────────────────────────────────────────── */
+
+.about-footer {
+  padding: 3rem 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  border-top: 1px solid rgba(255, 130, 210, 0.1);
+}
+
+.about-footer-link {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: #7ef8ff;
+  text-shadow: 0 0 8px rgba(126, 248, 255, 0.8), 0 0 22px rgba(126, 248, 255, 0.45);
+  margin-bottom: 0.3rem;
+  transition: all 0.15s;
+}
+
+.about-footer-link:hover {
+  color: #b8fdff;
+  text-shadow: 0 0 10px rgba(180, 255, 255, 1), 0 0 28px rgba(126, 248, 255, 0.8);
+}
+
+.about-footer-note {
+  margin: 0;
+  font-size: 0.75rem;
+  color: rgba(200, 170, 210, 0.35);
+  font-style: italic;
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .about-image-block--row {
+    grid-template-columns: 1fr;
+  }
+
+  .about-team-grid {
+    grid-template-columns: 1fr;
+  }
+}
